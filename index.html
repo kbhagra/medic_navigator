@@ -653,7 +653,7 @@ button{cursor:pointer;}
         <div class="workspace-header">
           <div><div class="ws-title">AI Clinical Documents</div><div class="ws-subtitle">187 documents generated today</div></div>
           <div class="ws-actions">
-            <button class="btn-sm btn-ghost" onclick="showToast('Exporting all PDFs…')">Export All</button>
+            <button class="btn-sm btn-ghost" onclick="exportAllDocPDFs()">Export All</button>
           </div>
         </div>
         <div class="filter-bar">
@@ -670,7 +670,7 @@ button{cursor:pointer;}
       <div id="mode-analytics" class="workspace-body" style="display:none">
         <div class="workspace-header">
           <div><div class="ws-title">Analytics</div><div class="ws-subtitle">March 2026 · Memorial General Hospital</div></div>
-          <div class="ws-actions"><button class="btn-sm btn-ghost" onclick="showToast('CSV exported')">Export CSV</button></div>
+          <div class="ws-actions"><button class="btn-sm btn-ghost" onclick="exportAnalyticsCSV()">Export CSV</button></div>
         </div>
         <div class="analytics-scroll">
           <div class="an-grid">
@@ -720,7 +720,7 @@ button{cursor:pointer;}
       <div id="mode-departments" class="workspace-body" style="display:none">
         <div class="workspace-header">
           <div><div class="ws-title">Departments</div><div class="ws-subtitle">9 active departments · Memorial General Hospital</div></div>
-          <div class="ws-actions"><button class="btn-sm btn-primary" onclick="showToast('Add department form opened')">+ Department</button></div>
+          <div class="ws-actions"><button class="btn-sm btn-primary" onclick="openAddDept()">+ Department</button></div>
         </div>
         <div class="dept-grid-wrap"><div class="dept-cards" id="dept-cards"></div></div>
       </div>
@@ -729,7 +729,7 @@ button{cursor:pointer;}
       <div id="mode-staff" class="workspace-body" style="display:none">
         <div class="workspace-header">
           <div><div class="ws-title">Staff Directory</div><div class="ws-subtitle">124 active staff · Memorial General Hospital</div></div>
-          <div class="ws-actions"><button class="btn-sm btn-primary" onclick="showToast('Add staff form opened')">+ Add Staff</button></div>
+          <div class="ws-actions"><button class="btn-sm btn-primary" onclick="openAddStaff()">+ Add Staff</button></div>
         </div>
         <div class="staff-grid-wrap"><div class="staff-cards" id="staff-cards"></div></div>
       </div>
@@ -1020,6 +1020,81 @@ button{cursor:pointer;}
         <button class="btn-sm btn-ghost" onclick="closeModal('addpt-overlay')">Cancel</button>
         <button class="btn-sm btn-primary" id="addpt-next-btn" onclick="addPatientStep('next')">Next →</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD DEPARTMENT MODAL -->
+<div class="overlay hidden" id="adddept-overlay" onclick="closeModalOutside(event,'adddept-overlay')">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-hdr">
+      <div class="modal-title">🏥 Add Department</div>
+      <button class="modal-close" onclick="closeModal('adddept-overlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-field"><label>Department Name *</label><input id="ad-name" placeholder="e.g. Radiology"></div>
+        <div class="form-field"><label>Icon / Emoji</label><input id="ad-icon" placeholder="e.g. 🩻" maxlength="4" style="font-size:20px;text-align:center;"></div>
+      </div>
+      <div class="form-field"><label>Description</label><textarea id="ad-desc" placeholder="Brief description of this department's scope and specialisation…"></textarea></div>
+      <div class="form-row">
+        <div class="form-field"><label>Department Head</label><input id="ad-head" placeholder="e.g. Dr. J. Smith"></div>
+        <div class="form-field"><label>Phone Extension</label><input id="ad-phone" placeholder="e.g. Ext. 5600"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-field"><label>Number of Beds</label><input id="ad-beds" type="number" placeholder="e.g. 12" min="1"></div>
+        <div class="form-field"><label>Initial Status</label>
+          <select id="ad-status"><option value="ok">● Normal</option><option value="busy">● Busy</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-ghost" onclick="closeModal('adddept-overlay')">Cancel</button>
+      <button class="btn-sm btn-primary" onclick="submitAddDept()">+ Add Department</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD STAFF MODAL -->
+<div class="overlay hidden" id="addstaff-overlay" onclick="closeModalOutside(event,'addstaff-overlay')">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-hdr">
+      <div class="modal-title">👤 Add Staff Member</div>
+      <button class="modal-close" onclick="closeModal('addstaff-overlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-field"><label>Full Name *</label><input id="as-name" placeholder="e.g. Dr. Sarah Lee"></div>
+        <div class="form-field"><label>Role / Title *</label><input id="as-role" placeholder="e.g. Attending Physician"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-field"><label>Department *</label>
+          <select id="as-dept"></select>
+        </div>
+        <div class="form-field"><label>Status</label>
+          <select id="as-status">
+            <option value="on-duty">● On Duty</option>
+            <option value="on-call">● On Call</option>
+            <option value="off-duty">● Off Duty</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field"><label>Email</label><input id="as-email" type="email" placeholder="dr.lee@hospital.org"></div>
+        <div class="form-field"><label>Phone / Pager</label><input id="as-phone" placeholder="e.g. (415) 555-0000"></div>
+      </div>
+      <div class="form-field"><label>Avatar Color</label>
+        <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;" id="as-color-picker">
+          ${['#1a6fff','#dc2626','#059669','#d97706','#7c3aed','#0891b2','#db2777','#64748b'].map(c=>`
+            <div onclick="selectStaffColor('${c}')" id="asc-${c.slice(1)}"
+              style="width:28px;height:28px;border-radius:50%;background:${c};cursor:pointer;border:2px solid transparent;transition:all .15s;"
+              onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform=''"></div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-ghost" onclick="closeModal('addstaff-overlay')">Cancel</button>
+      <button class="btn-sm btn-primary" onclick="submitAddStaff()">+ Add Staff Member</button>
     </div>
   </div>
 </div>
@@ -2442,7 +2517,151 @@ function submitNewPatient() {
 }
 
 
-/* ─── HOSPITAL SEARCH ─── */
+/* ─── EXPORT ALL DOCS PDFs ─── */
+function exportAllDocPDFs() {
+  if (DOCS.length === 0) { showToast('No documents to export'); return; }
+  showToast(`Generating ${DOCS.length} PDFs — downloads will start shortly…`);
+  DOCS.forEach((d, i) => {
+    setTimeout(() => {
+      const call = CALLS.find(c => c.name === d.patient);
+      if (call) {
+        loadJsPDF(() => buildClinicalPDF(call));
+      } else {
+        loadJsPDF(() => buildDocPDF(d));
+      }
+    }, i * 900);
+  });
+}
+
+/* ─── EXPORT ANALYTICS CSV ─── */
+function exportAnalyticsCSV() {
+  const hosp = document.getElementById('top-hospital').textContent + ' Hospital';
+  const now = new Date();
+  const rows = [
+    ['Mocha Hospital Intelligence — Analytics Export'],
+    [`Hospital: ${hosp}`],
+    [`Generated: ${now.toLocaleString()}`],
+    [''],
+    ['SUMMARY METRICS'],
+    ['Metric', 'Value', 'Change'],
+    ['Total Calls This Month', '3,841', '↑ 14%'],
+    ['Staff Hours Saved', '248h', '↑ 22%'],
+    ['Routing Accuracy', '98.2%', '↑ 0.4%'],
+    ['Avg Intake Time', '1m 12s', '↓ 38%'],
+    ['Patient Satisfaction', '92%', 'Pilot data'],
+    [''],
+    ['TRIAGE DISTRIBUTION'],
+    ['Level', 'Count', 'Percentage'],
+    ['T1 Critical', '692', '18%'],
+    ['T2 Urgent', '1,306', '34%'],
+    ['T3 Routine', '1,843', '48%'],
+    [''],
+    ['TOP DEPARTMENTS'],
+    ['Department', 'Head', 'Calls Today', 'Active', 'Avg Time', 'Status'],
+    ...DEPTS.map(d => [d.name, d.head, d.today, d.active, d.avg, d.status === 'ok' ? 'Normal' : 'Busy']),
+    [''],
+    ['ACTIVE CALL LOG'],
+    ['Patient', 'Age', 'MRN', 'Department', 'Triage', 'Status', 'Duration', 'Time'],
+    ...CALLS.map(c => [c.name, c.age, c.mrn, c.dept, c.triage.toUpperCase(), c.status, c.dur, c.ts]),
+    [''],
+    ['STAFF DIRECTORY'],
+    ['Name', 'Role', 'Department', 'Status'],
+    ...STAFF.map(s => [s.name, s.role, s.dept, s.status.replace('-', ' ')]),
+  ];
+  const csv = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Mocha_${hosp.replace(/ /g, '_')}_Analytics_${now.toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`✓ CSV exported: ${CALLS.length} calls, ${DEPTS.length} departments, ${STAFF.length} staff`);
+}
+
+/* ─── ADD DEPARTMENT ─── */
+function openAddDept() {
+  ['ad-name','ad-icon','ad-desc','ad-head','ad-phone','ad-beds'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('ad-status').value = 'ok';
+  document.getElementById('adddept-overlay').classList.remove('hidden');
+}
+
+function submitAddDept() {
+  const name = document.getElementById('ad-name').value.trim();
+  if (!name) {
+    document.getElementById('ad-name').style.borderColor = 'var(--t1)';
+    showToast('Please enter a department name');
+    return;
+  }
+  document.getElementById('ad-name').style.borderColor = '';
+  const icon = document.getElementById('ad-icon').value.trim() || '🏥';
+  const desc = document.getElementById('ad-desc').value.trim() || 'General department services.';
+  const head = document.getElementById('ad-head').value.trim() || 'TBD';
+  const phone = document.getElementById('ad-phone').value.trim() || 'Ext. TBD';
+  const beds = parseInt(document.getElementById('ad-beds').value) || 10;
+  const status = document.getElementById('ad-status').value;
+
+  const newDept = {
+    icon, name, head, active: 0, today: 0, avg: '—', status,
+    desc, capacity: '0%', beds, staff: [head], phone,
+    calls: []
+  };
+  DEPTS.push(newDept);
+  deptsRendered = false; // force re-render
+  renderDepts();
+  closeModal('adddept-overlay');
+  showToast(`✓ Department added: ${name}`);
+}
+
+/* ─── ADD STAFF ─── */
+let selectedStaffColor = '#1a6fff';
+
+function openAddStaff() {
+  ['as-name','as-role','as-email','as-phone'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('as-status').value = 'on-duty';
+  // Populate dept dropdown from current DEPTS
+  const sel = document.getElementById('as-dept');
+  sel.innerHTML = DEPTS.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+  // Reset color selection
+  selectedStaffColor = '#1a6fff';
+  document.querySelectorAll('#as-color-picker > div').forEach(el => el.style.border = '2px solid transparent');
+  const first = document.getElementById('asc-1a6fff');
+  if (first) first.style.border = '2px solid #fff';
+  document.getElementById('addstaff-overlay').classList.remove('hidden');
+}
+
+function selectStaffColor(color) {
+  selectedStaffColor = color;
+  document.querySelectorAll('#as-color-picker > div').forEach(el => el.style.border = '2px solid transparent');
+  const el = document.getElementById('asc-' + color.slice(1));
+  if (el) el.style.border = '2px solid #fff';
+}
+
+function submitAddStaff() {
+  const name = document.getElementById('as-name').value.trim();
+  const role = document.getElementById('as-role').value.trim();
+  const dept = document.getElementById('as-dept').value;
+  if (!name) { document.getElementById('as-name').style.borderColor = 'var(--t1)'; showToast('Please enter a name'); return; }
+  if (!role) { document.getElementById('as-role').style.borderColor = 'var(--t1)'; showToast('Please enter a role'); return; }
+  document.getElementById('as-name').style.borderColor = '';
+  document.getElementById('as-role').style.borderColor = '';
+
+  const initials = name.split(' ').map(x => x[0]).join('').substring(0, 2).toUpperCase();
+  const status = document.getElementById('as-status').value;
+
+  const newStaff = { name, role, dept, bg: selectedStaffColor, initials, status };
+  STAFF.push(newStaff);
+  staffRendered = false; // force re-render
+  renderStaff();
+  closeModal('addstaff-overlay');
+  showToast(`✓ Staff added: ${name} — ${dept}`);
+}
+
+
 const ALL_HOSPITALS = [
   {name:'Memorial General Hospital',   code:'MGH', city:'San Francisco, CA', beds:842},
   {name:'Riverside Medical Center',    code:'RMC', city:'Oakland, CA',       beds:510},
