@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Navigator — System Design</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #08080c; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+
+    .slide {
+      width: 960px;
+      height: 540px;
+      background: #0a0a10;
+      border: 1px solid #1e1e24;
+      border-radius: 12px;
+      padding: 32px 36px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Header */
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .header-left { display: flex; align-items: center; gap: 10px; }
+    .logo { width: 24px; height: 24px; border-radius: 5px; background: linear-gradient(135deg, #10b981, #06b6d4); display: flex; align-items: center; justify-content: center; font: 700 10px 'JetBrains Mono'; color: white; }
+    .header h1 { font: 700 15px 'JetBrains Mono'; color: white; letter-spacing: -0.02em; }
+    .header-right { font: 600 9px 'JetBrains Mono'; color: #4a4a5a; text-transform: uppercase; letter-spacing: 0.12em; }
+
+    /* Main grid */
+    .main { flex: 1; display: grid; grid-template-columns: 1fr 1fr 1fr; grid-template-rows: auto 1fr; gap: 10px; min-height: 0; }
+
+    /* Flow row */
+    .flow-row { grid-column: 1 / -1; display: flex; align-items: center; gap: 0; }
+    .flow-box {
+      flex: 1;
+      background: #0c0c12;
+      border: 1px solid #1e1e24;
+      border-radius: 8px;
+      padding: 10px 12px;
+      text-align: center;
+    }
+    .flow-box-label { font: 700 7px 'JetBrains Mono'; color: #4a4a5a; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 3px; }
+    .flow-box-name { font: 700 11px 'Inter'; color: white; }
+    .flow-box-sub { font: 500 8px 'JetBrains Mono'; color: #6b6b80; margin-top: 2px; }
+    .flow-arrow { width: 24px; display: flex; align-items: center; justify-content: center; color: #3a3a48; font-size: 14px; flex-shrink: 0; }
+
+    /* Bottom cards */
+    .card {
+      background: #0c0c12;
+      border: 1px solid #1e1e24;
+      border-radius: 8px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .card-header { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+    .card-title { font: 700 9px 'JetBrains Mono'; color: #6b6b80; text-transform: uppercase; letter-spacing: 0.1em; }
+    .badge { font: 700 7px 'JetBrains Mono'; padding: 1px 6px; border-radius: 3px; border: 1px solid; }
+
+    /* Agent wave grid */
+    .wave-grid { display: flex; flex-direction: column; gap: 5px; flex: 1; min-height: 0; }
+    .wave-row { display: flex; align-items: center; gap: 6px; }
+    .wave-label { font: 700 7px 'JetBrains Mono'; color: #3a3a48; width: 24px; text-align: right; flex-shrink: 0; }
+    .wave-agents { display: flex; gap: 4px; flex: 1; }
+    .agent-chip {
+      font: 500 7px 'JetBrains Mono';
+      padding: 3px 6px;
+      border-radius: 4px;
+      border: 1px solid;
+      white-space: nowrap;
+    }
+    .agent-chip.gemini { background: rgba(139,92,246,0.1); color: #a78bfa; border-color: rgba(139,92,246,0.2); }
+    .agent-chip.nemotron { background: rgba(34,197,94,0.1); color: #4ade80; border-color: rgba(34,197,94,0.2); }
+    .agent-chip.rag { background: rgba(6,182,212,0.1); color: #22d3ee; border-color: rgba(6,182,212,0.2); }
+    .agent-chip.ensemble { background: rgba(245,158,11,0.1); color: #fbbf24; border-color: rgba(245,158,11,0.2); }
+    .wave-type { font: 700 6px 'JetBrains Mono'; padding: 1px 4px; border-radius: 2px; border: 1px solid; flex-shrink: 0; }
+
+    /* Tech stack */
+    .tech-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; flex: 1; min-height: 0; }
+    .tech-item { display: flex; align-items: center; gap: 6px; }
+    .tech-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .tech-name { font: 600 9px 'Inter'; color: #d0d0e0; }
+    .tech-role { font: 400 8px 'Inter'; color: #4a4a5a; }
+
+    /* Stats */
+    .stats-row { display: flex; gap: 8px; flex: 1; min-height: 0; }
+    .stat { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0f0f18; border-radius: 6px; border: 1px solid #1a1a24; }
+    .stat-val { font: 800 22px 'JetBrains Mono'; color: white; }
+    .stat-label { font: 600 7px 'JetBrains Mono'; color: #4a4a5a; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; }
+  </style>
+</head>
+<body>
+  <div class="slide">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">
+        <div class="logo">N</div>
+        <h1>NAVIGATOR</h1>
+        <span style="font:500 8px 'JetBrains Mono';color:#4a4a5a;margin-left:4px;">System Architecture</span>
+      </div>
+      <div class="header-right">AI-Powered Patient Intelligence</div>
+    </div>
+
+    <div class="main">
+      <!-- TOP: Flow diagram -->
+      <div class="flow-row">
+        <div class="flow-box" style="border-color:#2a4a2a;">
+          <div class="flow-box-label" style="color:#10b981;">Input</div>
+          <div class="flow-box-name">Patient Call</div>
+          <div class="flow-box-sub">Vapi + ElevenLabs</div>
+        </div>
+        <div class="flow-arrow">&#x2192;</div>
+        <div class="flow-box">
+          <div class="flow-box-label">Backend</div>
+          <div class="flow-box-name">Next.js API</div>
+          <div class="flow-box-sub">Webhooks + SSE</div>
+        </div>
+        <div class="flow-arrow">&#x2192;</div>
+        <div class="flow-box" style="border-color:#3a2a4a;">
+          <div class="flow-box-label" style="color:#a78bfa;">AI Layer</div>
+          <div class="flow-box-name">15-Agent Pipeline</div>
+          <div class="flow-box-sub">Gemini · Nemotron · RAG</div>
+        </div>
+        <div class="flow-arrow">&#x2192;</div>
+        <div class="flow-box" style="border-color:#2a3a4a;">
+          <div class="flow-box-label" style="color:#06b6d4;">Memory</div>
+          <div class="flow-box-name">Mem[v] AI</div>
+          <div class="flow-box-sub">Patient History</div>
+        </div>
+        <div class="flow-arrow">&#x2192;</div>
+        <div class="flow-box" style="border-color:#2a4a2a;">
+          <div class="flow-box-label" style="color:#10b981;">Output</div>
+          <div class="flow-box-name">Dashboard + PDF</div>
+          <div class="flow-box-sub">94.2% Confidence</div>
+        </div>
+      </div>
+
+      <!-- BOTTOM LEFT: Agent Pipeline -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Agent Orchestration</span>
+          <span class="badge" style="background:rgba(139,92,246,0.1);color:#a78bfa;border-color:rgba(139,92,246,0.2);">15 AGENTS</span>
+          <span class="badge" style="background:rgba(6,182,212,0.1);color:#22d3ee;border-color:rgba(6,182,212,0.2);">5 WAVES</span>
+        </div>
+        <div class="wave-grid">
+          <div class="wave-row">
+            <span class="wave-label">W1</span>
+            <div class="wave-agents">
+              <span class="agent-chip gemini">Symptom Parser</span>
+              <span class="agent-chip gemini">Vitals</span>
+              <span class="agent-chip gemini">Labs</span>
+              <span class="agent-chip gemini">Meds</span>
+            </div>
+            <span class="wave-type" style="background:rgba(16,185,129,0.1);color:#10b981;border-color:rgba(16,185,129,0.2);">PAR</span>
+          </div>
+          <div class="wave-row">
+            <span class="wave-label">W2</span>
+            <div class="wave-agents">
+              <span class="agent-chip gemini">Diff Dx</span>
+              <span class="agent-chip nemotron">Nemotron 70B</span>
+              <span class="agent-chip gemini">Risk</span>
+              <span class="agent-chip gemini">Comorbidity</span>
+            </div>
+            <span class="wave-type" style="background:rgba(16,185,129,0.1);color:#10b981;border-color:rgba(16,185,129,0.2);">PAR</span>
+          </div>
+          <div class="wave-row">
+            <span class="wave-label">W3</span>
+            <div class="wave-agents">
+              <span class="agent-chip rag">Verifier + RAG</span>
+              <span class="agent-chip rag">Guidelines</span>
+              <span class="agent-chip gemini">Evidence</span>
+            </div>
+            <span class="wave-type" style="background:rgba(245,158,11,0.1);color:#fbbf24;border-color:rgba(245,158,11,0.2);">SEQ</span>
+          </div>
+          <div class="wave-row">
+            <span class="wave-label">W4</span>
+            <div class="wave-agents">
+              <span class="agent-chip gemini">Treatment</span>
+              <span class="agent-chip gemini">Referrals</span>
+            </div>
+            <span class="wave-type" style="background:rgba(139,92,246,0.1);color:#a78bfa;border-color:rgba(139,92,246,0.2);">HYB</span>
+          </div>
+          <div class="wave-row">
+            <span class="wave-label">W5</span>
+            <div class="wave-agents">
+              <span class="agent-chip gemini">Peer Judge</span>
+              <span class="agent-chip ensemble">Consensus</span>
+            </div>
+            <span class="wave-type" style="background:rgba(245,158,11,0.1);color:#fbbf24;border-color:rgba(245,158,11,0.2);">SEQ</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTTOM CENTER: Tech Stack -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Technology Stack</span>
+          <span class="badge" style="background:rgba(59,130,246,0.1);color:#60a5fa;border-color:rgba(59,130,246,0.2);">7 APIs</span>
+        </div>
+        <div class="tech-grid">
+          <div class="tech-item"><div class="tech-dot" style="background:#10b981;"></div><div><div class="tech-name">Vapi</div><div class="tech-role">Voice AI Calls</div></div></div>
+          <div class="tech-item"><div class="tech-dot" style="background:#10b981;"></div><div><div class="tech-name">ElevenLabs</div><div class="tech-role">Voice Synthesis</div></div></div>
+          <div class="tech-item"><div class="tech-dot" style="background:#a78bfa;"></div><div><div class="tech-name">Gemini 2.5 Flash</div><div class="tech-role">Primary AI Engine</div></div></div>
+          <div class="tech-item"><div class="tech-dot" style="background:#4ade80;"></div><div><div class="tech-name">NVIDIA Nemotron</div><div class="tech-role">Pattern Recognition</div></div></div>
+          <div class="tech-item"><div class="tech-dot" style="background:#22d3ee;"></div><div><div class="tech-name">Mem[v] AI</div><div class="tech-role">Patient Memory</div></div></div>
+          <div class="tech-item"><div class="tech-dot" style="background:#60a5fa;"></div><div><div class="tech-name">Next.js 16</div><div class="tech-role">Full-Stack Framework</div></div></div>
+          <div class="tech-item"><div class="tech-dot" style="background:#60a5fa;"></div><div><div class="tech-name">React + TS</div><div class="tech-role">Dashboard UI</div></div></div>
+          <div class="tech-item"><div class="tech-dot" style="background:#60a5fa;"></div><div><div class="tech-name">Tailwind CSS</div><div class="tech-role">Terminal Styling</div></div></div>
+        </div>
+      </div>
+
+      <!-- BOTTOM RIGHT: Key Metrics -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Performance</span>
+        </div>
+        <div class="stats-row">
+          <div class="stat"><div class="stat-val" style="color:#10b981;">94.2<span style="font-size:12px;">%</span></div><div class="stat-label">Confidence</div></div>
+          <div class="stat"><div class="stat-val">15</div><div class="stat-label">AI Agents</div></div>
+        </div>
+        <div style="height:6px;"></div>
+        <div class="stats-row">
+          <div class="stat"><div class="stat-val">5</div><div class="stat-label">Waves</div></div>
+          <div class="stat"><div class="stat-val" style="color:#fbbf24;">24<span style="font-size:12px;">s</span></div><div class="stat-label">Latency</div></div>
+        </div>
+        <div style="height:6px;"></div>
+        <div class="stats-row">
+          <div class="stat"><div class="stat-val">4</div><div class="stat-label">Models</div></div>
+          <div class="stat"><div class="stat-val" style="color:#a78bfa;">7</div><div class="stat-label">APIs</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
