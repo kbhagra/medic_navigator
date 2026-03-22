@@ -13,6 +13,8 @@ export async function POST() {
   callData.extracted.urgency = null;
   callData.extracted.medicalNotes = null;
   callData.extracted.actionNeeded = null;
+  callData.patient = null;
+  callData.processingSteps.length = 0;
   callData.rawEvents.length = 0;
   return NextResponse.json({ ok: true });
 }

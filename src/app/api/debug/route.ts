@@ -13,5 +13,7 @@ export async function GET(req: NextRequest) {
     callId: callData.callId,
     callerPhone: callData.callerPhone,
     extracted: callData.extracted,
+    patient: callData.patient,
+    processingSteps: callData.processingSteps,
   });
 }

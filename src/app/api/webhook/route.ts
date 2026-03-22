@@ -238,20 +238,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (typeof event.summary === "string" && event.summary) {
-      callData.summary = event.summary;
-    } else {
-      const fullTranscript = callData.transcript
-        .map((t) => `${t.role}: ${t.text}`)
-        .join("\n");
+    // Don't generate summary here — let /api/process handle it with full Mem[v] context
+    // Just do a final extraction
+    const fullTranscript = callData.transcript
+      .map((t) => `${t.role}: ${t.text}`)
+      .join("\n");
 
-      if (fullTranscript) {
-        await generateSummary(fullTranscript);
-        await extractInfo(fullTranscript);
-      } else {
-        callData.summary = "Call ended. No transcript captured.";
-      }
+    if (fullTranscript) {
+      await extractInfo(fullTranscript);
     }
+
+    // Auto-trigger the processing pipeline
+    const baseUrl = req.headers.get("x-forwarded-proto") === "https"
+      ? `https://${req.headers.get("host")}`
+      : `http://${req.headers.get("host") || "localhost:3000"}`;
+
+    fetch(`${baseUrl}/api/process`, { method: "POST" }).catch(() => {});
   }
 
   return NextResponse.json({ ok: true });
