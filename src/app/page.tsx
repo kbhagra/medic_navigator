@@ -196,15 +196,15 @@ export default function Home() {
   const [summary, setSummary] = useState<string | null>(null);
   const [callStatus, setCallStatus] = useState("idle");
   const [memories, setMemories] = useState<string[]>([]);
-  const [patient, setPatient] = useState<PatientData | null>(null); // START NULL — no data until call
+  const [patient, setPatient] = useState<PatientData | null>(AYAAN); // Pre-loaded for demo
   const [agentStatuses, setAgentStatuses] = useState<Record<string, AgentStatus>>(() => {
     const s: Record<string, AgentStatus> = {};
-    AGENTS.forEach((a) => { s[a.id] = "pending"; });
+    AGENTS.forEach((a) => { s[a.id] = "complete"; });
     return s;
   });
   const [orchRunning, setOrchRunning] = useState(false);
-  const [orchComplete, setOrchComplete] = useState(false);
-  const [orchProgress, setOrchProgress] = useState(0);
+  const [orchComplete, setOrchComplete] = useState(true);
+  const [orchProgress, setOrchProgress] = useState(100);
   const [selectedAgent, setSelectedAgent] = useState<AgentDef | null>(null);
 
   // Poll /api/debug — when call completes, load Ayaan's data
