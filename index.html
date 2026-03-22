@@ -1,0 +1,2272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vela — Hospital Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;500;600;700;800&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#080d14;--surface:#0d1420;--surface2:#121a28;--surface3:#18223a;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.12);
+  --text:#e8ecf4;--text2:rgba(255,255,255,.55);--text3:rgba(255,255,255,.28);
+  --accent:#1a6fff;--accent-glow:rgba(26,111,255,.18);
+  --t1:#ff3232;--t1-bg:rgba(255,50,50,.1);--t1-border:rgba(255,50,50,.25);
+  --t2:#ff8c00;--t2-bg:rgba(255,140,0,.1);--t2-border:rgba(255,140,0,.25);
+  --t3:#22c55e;--t3-bg:rgba(34,197,94,.1);--t3-border:rgba(34,197,94,.25);
+  --sidebar-w:220px;--topbar-h:52px;--detail-w:400px;
+}
+html,body{height:100%;overflow:hidden;font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);}
+button,input,select,textarea{font-family:'Syne',sans-serif;}
+button{cursor:pointer;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:4px;}
+
+/* ── ANIMATIONS ── */
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.75)}}
+@keyframes slideInRight{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}
+@keyframes slideInLeft{from{transform:translateX(-12px);opacity:0}to{transform:none;opacity:1}}
+@keyframes fadeUp{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes shimmer{0%{background-position:-200px 0}100%{background-position:200px 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes countUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes newCall{0%{background:rgba(26,111,255,.15)}100%{background:transparent}}
+
+.live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--t3);animation:pulse 2s infinite;}
+.live-dot.t1{background:var(--t1);}
+.live-dot.t2{background:var(--t2);}
+.fade-up{animation:fadeUp .25s ease forwards;}
+.slide-right{animation:slideInRight .3s ease forwards;}
+
+/* ── LAYOUT ── */
+.shell{display:grid;grid-template-columns:var(--sidebar-w) 1fr;grid-template-rows:var(--topbar-h) 1fr;height:100vh;overflow:hidden;}
+
+/* ── TOPBAR ── */
+.topbar{grid-column:1/-1;background:rgba(8,13,20,.95);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px 0 0;gap:0;z-index:50;backdrop-filter:blur(12px);}
+.topbar-logo{width:var(--sidebar-w);padding:0 20px;display:flex;align-items:center;gap:10px;border-right:1px solid var(--border);height:100%;flex-shrink:0;}
+.logo-mark{font-family:'DM Serif Display',serif;font-size:20px;color:#fff;letter-spacing:-.3px;}
+.logo-mark span{color:var(--accent);}
+.logo-hospital{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-top:1px;}
+.topbar-search{flex:1;padding:0 16px 0 20px;display:flex;align-items:center;gap:10px;}
+.search-wrap{flex:1;max-width:380px;position:relative;}
+.search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;}
+.search-input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 12px 7px 32px;border-radius:6px;font-size:13px;outline:none;transition:border .2s;}
+.search-input::placeholder{color:var(--text3);}
+.search-input:focus{border-color:var(--accent);}
+.topbar-right{display:flex;align-items:center;gap:14px;padding-left:16px;border-left:1px solid var(--border);}
+.sys-status{display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:11px;color:var(--t3);}
+.topbar-time{font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);}
+.topbar-avatar{width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:pointer;}
+.topbar-btn{background:transparent;border:1px solid var(--border2);color:var(--text2);padding:5px 12px;border-radius:5px;font-size:12px;font-weight:600;transition:all .15s;}
+.topbar-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+/* ── SIDEBAR ── */
+.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.sidebar-section{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);padding:16px 16px 6px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .15s;border-left:2px solid transparent;position:relative;}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,.04);}
+.nav-item.active{color:#fff;background:var(--accent-glow);border-left-color:var(--accent);}
+.nav-icon{font-size:14px;opacity:.7;flex-shrink:0;width:18px;text-align:center;}
+.nav-badge{margin-left:auto;background:var(--t1);color:#fff;font-family:'DM Mono',monospace;font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;animation:pulse 2s infinite;}
+.nav-badge.ok{background:rgba(34,197,94,.2);color:var(--t3);border:1px solid rgba(34,197,94,.3);animation:none;}
+.sidebar-footer{margin-top:auto;padding:12px;border-top:1px solid var(--border);}
+.sidebar-stat{display:flex;align-items:center;justify-content:space-between;padding:6px 4px;}
+.ss-label{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);}
+.ss-val{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--text2);}
+
+/* ── MAIN AREA ── */
+.main{display:grid;grid-template-columns:1fr;transition:grid-template-columns .3s ease;overflow:hidden;position:relative;}
+.main.detail-open{grid-template-columns:1fr var(--detail-w);}
+
+/* ── WORKSPACE ── */
+.workspace{overflow:hidden;display:flex;flex-direction:column;}
+.workspace-header{padding:14px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.ws-title{font-size:15px;font-weight:700;color:#fff;}
+.ws-subtitle{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-top:2px;}
+.ws-actions{display:flex;gap:8px;align-items:center;}
+.btn-sm{padding:6px 14px;border-radius:5px;font-size:12px;font-weight:600;border:none;cursor:pointer;transition:all .15s;}
+.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--text2);}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:#1460e0;}
+.btn-danger{background:rgba(255,50,50,.15);color:var(--t1);border:1px solid var(--t1-border);}
+.btn-danger:hover{background:rgba(255,50,50,.25);}
+.btn-success{background:rgba(34,197,94,.15);color:var(--t3);border:1px solid var(--t3-border);}
+.btn-success:hover{background:rgba(34,197,94,.25);}
+
+/* ── KPI ROW ── */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);border-bottom:1px solid var(--border);flex-shrink:0;}
+.kpi{background:var(--surface);padding:12px 16px;position:relative;overflow:hidden;}
+.kpi::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--kpi-color,var(--accent));opacity:.6;}
+.kpi-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:5px;}
+.kpi-val{font-family:'DM Serif Display',serif;font-size:26px;color:#fff;line-height:1;}
+.kpi-change{font-family:'DM Mono',monospace;font-size:10px;margin-top:4px;}
+.kpi-change.up{color:var(--t3);}
+.kpi-change.dn{color:var(--t1);}
+
+/* ── FILTER BAR ── */
+.filter-bar{display:flex;align-items:center;gap:8px;padding:10px 20px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface);}
+.filter-label{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;}
+.chip{font-family:'DM Mono',monospace;font-size:10px;font-weight:500;padding:4px 11px;border-radius:20px;border:1px solid var(--border2);color:var(--text3);background:transparent;cursor:pointer;transition:all .15s;letter-spacing:.04em;text-transform:uppercase;}
+.chip:hover{color:var(--text2);border-color:rgba(255,255,255,.2);}
+.chip.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.chip.t1{border-color:var(--t1-border);color:var(--t1);}
+.chip.t1.active{background:var(--t1);border-color:var(--t1);color:#fff;}
+.chip.t2{border-color:var(--t2-border);color:var(--t2);}
+.chip.t2.active{background:var(--t2);border-color:var(--t2);color:#fff;}
+.chip.t3{border-color:var(--t3-border);color:var(--t3);}
+.chip.t3.active{background:var(--t3);border-color:var(--t3);color:#fff;}
+.filter-spacer{flex:1;}
+.live-label{display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:10px;color:var(--t3);}
+
+/* ── CALL BOARD ── */
+.call-board{flex:1;overflow-y:auto;padding:12px 20px;display:flex;flex-direction:column;gap:6px;}
+
+/* ── CALL CARD ── */
+.call-card{display:grid;grid-template-columns:3px 36px 1fr 120px 90px 80px 100px;align-items:center;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:all .15s;overflow:hidden;position:relative;}
+.call-card:hover{background:var(--surface2);border-color:var(--border2);}
+.call-card.selected{background:var(--surface3);border-color:var(--accent);}
+.call-card.new-call{animation:newCall 2s ease;}
+.call-card .cc-accent{height:100%;width:3px;flex-shrink:0;}
+.call-card.t1 .cc-accent{background:var(--t1);}
+.call-card.t2 .cc-accent{background:var(--t2);}
+.call-card.t3 .cc-accent{background:var(--t3);}
+.cc-triage{padding:0 10px;display:flex;justify-content:center;}
+.triage-badge{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:9px;font-weight:700;flex-shrink:0;}
+.call-card.t1 .triage-badge{background:var(--t1-bg);color:var(--t1);border:1px solid var(--t1-border);}
+.call-card.t2 .triage-badge{background:var(--t2-bg);color:var(--t2);border:1px solid var(--t2-border);}
+.call-card.t3 .triage-badge{background:var(--t3-bg);color:var(--t3);border:1px solid var(--t3-border);}
+.call-card.t1 .triage-badge{animation:blink 1.5s infinite;}
+.cc-info{padding:10px 12px 10px 4px;}
+.cc-name{font-size:13px;font-weight:600;color:var(--text);}
+.cc-detail{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px;}
+.cc-dept{font-family:'DM Mono',monospace;font-size:10px;color:var(--text2);padding:0 8px;}
+.cc-status-wrap{padding:0 8px;}
+.status-pill{font-family:'DM Mono',monospace;font-size:9px;font-weight:600;padding:3px 8px;border-radius:3px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;}
+.s-active{background:rgba(26,111,255,.15);color:var(--accent);border:1px solid rgba(26,111,255,.3);}
+.s-routing{background:var(--t2-bg);color:var(--t2);border:1px solid var(--t2-border);}
+.s-routed{background:rgba(255,255,255,.06);color:var(--text3);border:1px solid var(--border);}
+.s-processing{background:rgba(26,111,255,.1);color:#7aacff;border:1px solid rgba(26,111,255,.2);}
+.cc-time{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);padding:0 8px;text-align:right;}
+.cc-actions{padding:0 10px;display:flex;gap:5px;justify-content:flex-end;}
+.mini-btn{font-size:10px;padding:4px 8px;border-radius:4px;font-weight:600;border:none;cursor:pointer;transition:all .15s;font-family:'DM Mono',monospace;}
+.mb-review{background:rgba(26,111,255,.15);color:var(--accent);border:1px solid rgba(26,111,255,.25);}
+.mb-review:hover{background:rgba(26,111,255,.3);}
+.mb-esc{background:var(--t1-bg);color:var(--t1);border:1px solid var(--t1-border);}
+.mb-esc:hover{background:rgba(255,50,50,.2);}
+
+/* ── DETAIL PANEL ── */
+.detail-panel{border-left:1px solid var(--border);overflow:hidden;display:flex;flex-direction:column;background:var(--surface);animation:slideInRight .25s ease;}
+.detail-panel.hidden{display:none;}
+.dp-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;}
+.dp-close{background:rgba(255,255,255,.07);border:none;color:var(--text2);width:26px;height:26px;border-radius:5px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;}
+.dp-close:hover{background:rgba(255,255,255,.12);color:#fff;}
+.dp-name{font-family:'DM Serif Display',serif;font-size:18px;color:#fff;line-height:1.2;}
+.dp-meta{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-top:4px;}
+.dp-triage{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:4px;font-family:'DM Mono',monospace;font-size:10px;font-weight:700;text-transform:uppercase;margin-top:6px;width:fit-content;}
+.dp-triage.t1{background:var(--t1-bg);color:var(--t1);border:1px solid var(--t1-border);}
+.dp-triage.t2{background:var(--t2-bg);color:var(--t2);border:1px solid var(--t2-border);}
+.dp-triage.t3{background:var(--t3-bg);color:var(--t3);border:1px solid var(--t3-border);}
+.dp-body{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 14px;display:flex;flex-direction:column;gap:10px;min-height:0;}
+.dp-section{background:var(--surface2);border:1px solid var(--border);border-radius:6px;}
+.dp-sec-hdr{padding:8px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.dp-sec-title{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);}
+.dp-sec-body{padding:10px 12px;font-size:12px;line-height:1.75;color:rgba(255,255,255,.7);}
+.dp-sec-body strong{color:rgba(255,255,255,.92);font-weight:600;}
+.vitals-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 12px;}
+.vital{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:8px 10px;}
+.vital-lbl{font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:4px;}
+.vital-val{font-size:14px;font-weight:700;color:#fff;line-height:1.3;}
+.vital-val.warn{color:var(--t2);}
+.vital-val.urgent{color:var(--t1);}
+.dp-actions{padding:12px 14px;border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:7px;flex-shrink:0;}
+.action-btn{padding:9px 10px;border-radius:6px;font-size:12px;font-weight:700;border:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.ab-review{background:var(--accent);color:#fff;}
+.ab-review:hover{background:#1460e0;}
+.ab-escalate{background:var(--t1-bg);color:var(--t1);border:1px solid var(--t1-border);}
+.ab-escalate:hover{background:rgba(255,50,50,.2);}
+.ab-call{background:var(--t3-bg);color:var(--t3);border:1px solid var(--t3-border);}
+.ab-call:hover{background:rgba(34,197,94,.2);}
+.ab-route{background:rgba(26,111,255,.1);color:#7aacff;border:1px solid rgba(26,111,255,.2);}
+.ab-route:hover{background:rgba(26,111,255,.2);}
+.ab-complete{background:rgba(255,255,255,.07);color:var(--text2);border:1px solid var(--border2);}
+.ab-complete:hover{background:rgba(255,255,255,.12);color:#fff;}
+.ab-pdf{grid-column:1/-1;background:transparent;border:1px solid var(--border2);color:var(--text2);}
+.ab-pdf:hover{border-color:var(--accent);color:var(--accent);}
+
+/* ── WORKSPACE MODES ── */
+.workspace-body{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+
+/* Patients table */
+.pt-table-wrap{flex:1;overflow-y:auto;padding:16px 20px;}
+.pt-search-bar{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;gap:10px;}
+.pt-search{flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:6px;font-size:13px;outline:none;}
+.pt-search::placeholder{color:var(--text3);}
+.pt-search:focus{border-color:var(--accent);}
+.pt-table{width:100%;border-collapse:collapse;}
+.pt-table th{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);}
+.pt-table td{padding:11px 12px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);}
+.pt-table tr:hover td{background:var(--surface2);cursor:pointer;}
+.pt-table tr.selected td{background:var(--surface3);}
+.pt-name-cell{color:var(--text);font-weight:600;}
+.pt-mrn{font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);}
+.allergy-tag{font-family:'DM Mono',monospace;font-size:9px;padding:2px 7px;border-radius:3px;background:var(--t1-bg);color:var(--t1);border:1px solid var(--t1-border);}
+
+/* Documents */
+.docs-grid{flex:1;overflow-y:auto;padding:16px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;align-content:start;}
+.doc-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;cursor:pointer;transition:all .2s;}
+.doc-card:hover{background:var(--surface2);border-color:var(--border2);}
+.doc-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.doc-triage{font-family:'DM Mono',monospace;font-size:9px;font-weight:700;padding:3px 8px;border-radius:3px;text-transform:uppercase;}
+.doc-patient{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.doc-summary{font-size:11px;line-height:1.6;color:var(--text3);margin-bottom:10px;}
+.doc-footer{display:flex;justify-content:space-between;align-items:center;}
+.doc-time{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);}
+.doc-dl{font-family:'DM Mono',monospace;font-size:10px;padding:4px 10px;border-radius:4px;background:rgba(26,111,255,.1);color:var(--accent);border:1px solid rgba(26,111,255,.2);cursor:pointer;transition:all .15s;}
+.doc-dl:hover{background:rgba(26,111,255,.2);}
+
+/* Analytics */
+.analytics-scroll{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:14px;}
+.an-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.an-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 20px;}
+.an-big{font-family:'DM Serif Display',serif;font-size:36px;color:#fff;margin-top:8px;}
+.an-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);}
+.an-change{font-family:'DM Mono',monospace;font-size:10px;margin-top:6px;}
+.an-change.up{color:var(--t3);}
+.an-change.dn{color:var(--t1);}
+.an-full{grid-column:1/-1;}
+.an-two{grid-column:span 2;}
+.hbar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+.hbar-lbl{font-family:'DM Mono',monospace;font-size:10px;color:var(--text2);width:90px;flex-shrink:0;}
+.hbar-track{flex:1;height:6px;background:var(--surface3);border-radius:3px;overflow:hidden;}
+.hbar-fill{height:100%;border-radius:3px;transition:width .8s ease;}
+.hbar-val{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);width:36px;text-align:right;}
+.bar-chart{display:flex;align-items:flex-end;gap:5px;height:80px;margin-top:12px;}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.bar-fill{width:100%;border-radius:2px 2px 0 0;transition:height .6s ease;min-height:2px;}
+.bar-lbl{font-family:'DM Mono',monospace;font-size:8px;color:var(--text3);}
+
+/* Departments */
+.dept-grid-wrap{flex:1;overflow-y:auto;padding:16px 20px;}
+.dept-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.dept-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:18px;cursor:pointer;transition:all .2s;}
+.dept-card:hover{background:var(--surface2);border-color:var(--border2);}
+.dept-icon{font-size:28px;margin-bottom:10px;}
+.dept-name{font-size:15px;font-weight:700;color:#fff;margin-bottom:3px;}
+.dept-head{font-size:11px;color:var(--text3);margin-bottom:12px;}
+.dept-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.ds-item{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:8px 10px;}
+.ds-val{font-family:'DM Serif Display',serif;font-size:18px;color:#fff;}
+.ds-lbl{font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-top:2px;}
+
+/* Staff */
+.staff-grid-wrap{flex:1;overflow-y:auto;padding:16px 20px;}
+.staff-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.staff-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center;transition:all .2s;}
+.staff-card:hover{background:var(--surface2);}
+.staff-av{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;margin:0 auto 10px;}
+.staff-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px;}
+.staff-role{font-size:11px;color:var(--text3);margin-bottom:8px;}
+.staff-dept-tag{font-family:'DM Mono',monospace;font-size:9px;padding:3px 8px;border-radius:3px;background:rgba(26,111,255,.1);color:var(--accent);display:inline-block;}
+.staff-status{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:8px;font-size:11px;color:var(--text3);}
+
+/* ── MODALS ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(6px);}
+.overlay.hidden{display:none;}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:12px;width:100%;max-width:560px;overflow:hidden;animation:fadeUp .25s ease;}
+.modal-hdr{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-family:'DM Serif Display',serif;font-size:20px;color:#fff;}
+.modal-close{background:rgba(255,255,255,.07);border:none;color:var(--text2);width:30px;height:30px;border-radius:6px;font-size:16px;cursor:pointer;transition:all .2s;}
+.modal-close:hover{background:rgba(255,255,255,.12);color:#fff;}
+.modal-body{padding:20px 22px;display:flex;flex-direction:column;gap:14px;max-height:70vh;overflow-y:auto;}
+.modal-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-field label{display:block;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;}
+.form-field input,.form-field select,.form-field textarea{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:6px;font-size:13px;outline:none;transition:border .2s;}
+.form-field input:focus,.form-field select:focus,.form-field textarea:focus{border-color:var(--accent);}
+.form-field input::placeholder,.form-field textarea::placeholder{color:var(--text3);}
+.form-field select option{background:#111;}
+.form-field textarea{resize:vertical;min-height:70px;line-height:1.5;}
+
+/* Settings full overlay */
+.settings-overlay{position:fixed;inset:0;background:var(--bg);z-index:300;display:flex;flex-direction:column;animation:fadeUp .2s ease;}
+.settings-overlay.hidden{display:none;}
+.settings-topbar{height:var(--topbar-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;}
+.settings-title{font-family:'DM Serif Display',serif;font-size:18px;color:#fff;}
+.settings-body{flex:1;overflow-y:auto;padding:32px;max-width:800px;width:100%;margin:0 auto;}
+.settings-section-title{font-size:15px;font-weight:700;color:#fff;margin-bottom:4px;}
+.settings-section-desc{font-size:12px;color:var(--text3);margin-bottom:18px;}
+.settings-section{margin-bottom:36px;}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);}
+.setting-row:last-child{border:none;}
+.sr-left h4{font-size:13px;font-weight:600;color:rgba(255,255,255,.8);margin-bottom:3px;}
+.sr-left p{font-size:11px;color:var(--text3);line-height:1.5;}
+.toggle{position:relative;width:42px;height:22px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:rgba(255,255,255,.12);border-radius:11px;cursor:pointer;transition:.2s;}
+.toggle-slider::before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;}
+.toggle input:checked+.toggle-slider{background:var(--accent);}
+.toggle input:checked+.toggle-slider::before{transform:translateX(20px);}
+.settings-input{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-size:13px;outline:none;width:180px;}
+.settings-input:focus{border-color:var(--accent);}
+.conn-badge{font-family:'DM Mono',monospace;font-size:10px;padding:4px 10px;border-radius:4px;}
+.conn-ok{background:var(--t3-bg);color:var(--t3);border:1px solid var(--t3-border);}
+.conn-no{background:var(--surface3);color:var(--text3);border:1px solid var(--border);}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--surface2);border:1px solid rgba(26,111,255,.3);color:var(--text);padding:11px 16px;border-radius:7px;font-size:12px;font-weight:500;z-index:9999;display:flex;align-items:center;gap:8px;box-shadow:0 8px 32px rgba(0,0,0,.4);animation:fadeUp .25s ease;pointer-events:none;max-width:320px;}
+.toast.hidden{display:none;}
+.toast.t1-toast{border-color:var(--t1-border);}
+
+/* ── PROCESSING STATE ── */
+.processing-row{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface2);border:1px solid rgba(26,111,255,.2);border-radius:7px;animation:fadeUp .3s ease;}
+.proc-spinner{width:14px;height:14px;border:2px solid rgba(26,111,255,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;}
+.proc-text{font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);}
+.proc-steps{display:flex;gap:6px;margin-left:auto;}
+.proc-step{font-family:'DM Mono',monospace;font-size:9px;padding:2px 7px;border-radius:3px;background:rgba(26,111,255,.1);color:var(--text3);border:1px solid rgba(26,111,255,.15);}
+.proc-step.done{color:var(--t3);background:var(--t3-bg);border-color:var(--t3-border);}
+.proc-step.active{color:var(--accent);background:rgba(26,111,255,.15);border-color:rgba(26,111,255,.3);}
+
+/* ── EMPTY STATE ── */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--text3);text-align:center;padding:40px;}
+.empty-icon{font-size:36px;opacity:.3;}
+.empty-text{font-size:13px;}
+
+/* ── SCROLLBAR HIDDEN on body ── */
+.call-board::-webkit-scrollbar,.dp-body::-webkit-scrollbar,.pt-table-wrap::-webkit-scrollbar,
+.docs-grid::-webkit-scrollbar,.analytics-scroll::-webkit-scrollbar,.dept-grid-wrap::-webkit-scrollbar,
+.staff-grid-wrap::-webkit-scrollbar,.settings-body::-webkit-scrollbar,.modal-body::-webkit-scrollbar{width:3px;}
+/* ── LOGIN SCREEN ── */
+#login-screen{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;align-items:stretch;}
+#login-screen.hidden{display:none;}
+.ls-left{flex:1;background:linear-gradient(135deg,#060d1a 0%,#0a1525 100%);display:flex;flex-direction:column;justify-content:space-between;padding:52px 56px;position:relative;overflow:hidden;}
+.ls-left::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 25% 35%,rgba(26,111,255,.12) 0%,transparent 60%);}
+.ls-left-content{position:relative;z-index:1;}
+.ls-logo{font-family:'DM Serif Display',serif;font-size:24px;color:#fff;margin-bottom:52px;line-height:1.3;}
+.ls-logo span{color:var(--accent);}
+.ls-h2{font-family:'DM Serif Display',serif;font-size:clamp(26px,3vw,44px);color:#fff;line-height:1.18;margin-bottom:14px;letter-spacing:-.4px;}
+.ls-sub{font-size:14px;line-height:1.75;color:rgba(255,255,255,.4);max-width:400px;}
+.ls-hospitals{margin-top:40px;display:flex;flex-direction:column;gap:9px;}
+.ls-hosp{display:flex;align-items:center;gap:13px;padding:13px 16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:7px;cursor:pointer;transition:all .2s;}
+.ls-hosp:hover{background:rgba(255,255,255,.08);border-color:rgba(26,111,255,.4);}
+.ls-hosp-icon{width:36px;height:36px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.ls-hosp-name{font-size:13px;font-weight:600;color:rgba(255,255,255,.82);line-height:1.35;}
+.ls-hosp-sub{font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.28);margin-top:2px;line-height:1.4;}
+.ls-hosp-arrow{margin-left:auto;color:rgba(255,255,255,.22);font-size:17px;transition:transform .2s;flex-shrink:0;}
+.ls-hosp:hover .ls-hosp-arrow{transform:translateX(3px);color:var(--accent);}
+.ls-footer{font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.18);position:relative;z-index:1;line-height:1.6;}
+.ls-right{width:480px;background:#050a10;display:flex;align-items:center;justify-content:center;padding:52px 48px;overflow-y:auto;border-left:1px solid rgba(255,255,255,.06);}
+.ls-box{width:100%;max-width:380px;}
+.ls-box-title{font-family:'DM Serif Display',serif;font-size:30px;color:#fff;margin-bottom:6px;line-height:1.25;}
+.ls-box-sub{font-size:13px;color:rgba(255,255,255,.38);margin-bottom:34px;line-height:1.65;}
+.ls-form-group{margin-bottom:16px;}
+.ls-label{display:block;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,.38);margin-bottom:7px;line-height:1.4;}
+.ls-input{display:block;width:100%;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.09);color:#fff;padding:12px 14px;border-radius:7px;font-size:13px;outline:none;transition:border .2s;line-height:1.5;font-family:'Syne',sans-serif;}
+.ls-input::placeholder{color:rgba(255,255,255,.22);}
+.ls-input:focus{border-color:var(--accent);}
+.ls-select{display:block;width:100%;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.09);color:#fff;padding:12px 14px;border-radius:7px;font-size:13px;outline:none;appearance:none;cursor:pointer;line-height:1.5;font-family:'Syne',sans-serif;}
+.ls-select:focus{border-color:var(--accent);}
+.ls-select option{background:#0a0e18;}
+.ls-btn{display:block;width:100%;background:var(--accent);color:#fff;padding:13px 16px;border-radius:7px;font-size:14px;font-weight:700;border:none;cursor:pointer;transition:all .2s;line-height:1.5;margin-top:6px;font-family:'Syne',sans-serif;}
+.ls-btn:hover{background:#1460e0;box-shadow:0 6px 24px rgba(26,111,255,.35);}
+.ls-divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:rgba(255,255,255,.18);font-size:11px;line-height:1;}
+.ls-divider::before,.ls-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.07);}
+.ls-demo-row{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.ls-demo-btn{background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.09);color:rgba(255,255,255,.6);padding:12px 8px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;line-height:1.4;font-family:'Syne',sans-serif;}
+.ls-demo-btn:hover{background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.2);}
+.ls-back{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,.28);cursor:pointer;transition:color .2s;margin-top:24px;background:none;border:none;font-family:'Syne',sans-serif;}
+.ls-back:hover{color:rgba(255,255,255,.6);}
+
+.addpt-step-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.15);transition:all .2s;}
+.addpt-step-dot.active{background:var(--accent);transform:scale(1.2);}
+.addpt-step-dot.done{background:var(--t3);}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="ls-left">
+    <div class="ls-left-content">
+      <div class="ls-logo">Vela<span>.</span></div>
+      <h2 class="ls-h2">Your hospital's<br>private portal.</h2>
+      <p class="ls-sub">Each healthcare partner gets a fully isolated, secure Vela portal — role-based, HIPAA-compliant, and built for clinical speed.</p>
+      <div class="ls-hospitals">
+        <div class="ls-hosp" onclick="selectHospital('Memorial General Hospital','MGH')">
+          <div class="ls-hosp-icon" style="background:rgba(26,111,255,.15)">🏥</div>
+          <div>
+            <div class="ls-hosp-name">Memorial General Hospital</div>
+            <div class="ls-hosp-sub">San Francisco, CA · 842 beds</div>
+          </div>
+          <div class="ls-hosp-arrow">›</div>
+        </div>
+        <div class="ls-hosp" onclick="selectHospital('Riverside Medical Center','RMC')">
+          <div class="ls-hosp-icon" style="background:rgba(0,200,150,.12)">🏨</div>
+          <div>
+            <div class="ls-hosp-name">Riverside Medical Center</div>
+            <div class="ls-hosp-sub">Oakland, CA · 510 beds</div>
+          </div>
+          <div class="ls-hosp-arrow">›</div>
+        </div>
+        <div class="ls-hosp" onclick="selectHospital('St. Catherine Health','SCH')">
+          <div class="ls-hosp-icon" style="background:rgba(255,140,0,.12)">⚕️</div>
+          <div>
+            <div class="ls-hosp-name">St. Catherine Health</div>
+            <div class="ls-hosp-sub">San Jose, CA · 380 beds</div>
+          </div>
+          <div class="ls-hosp-arrow">›</div>
+        </div>
+      </div>
+    </div>
+    <div class="ls-footer">HIPAA-compliant · SOC 2 Type II · 256-bit encryption</div>
+  </div>
+  <div class="ls-right">
+    <div class="ls-box">
+      <div class="ls-box-title" id="ls-title">Sign In</div>
+      <div class="ls-box-sub" id="ls-sub">Access your hospital's Vela command center</div>
+
+      <!-- Normal sign-in form -->
+      <div id="ls-form">
+        <div class="ls-form-group">
+          <label class="ls-label">Hospital</label>
+          <select class="ls-select" id="ls-hospital">
+            <option value="MGH">Memorial General Hospital</option>
+            <option value="RMC">Riverside Medical Center</option>
+            <option value="SCH">St. Catherine Health</option>
+          </select>
+        </div>
+        <div class="ls-form-group">
+          <label class="ls-label">Email Address</label>
+          <input class="ls-input" type="email" placeholder="you@hospital.org" id="ls-email">
+        </div>
+        <div class="ls-form-group">
+          <label class="ls-label">Password</label>
+          <input class="ls-input" type="password" placeholder="••••••••••" id="ls-password">
+        </div>
+        <button class="ls-btn" onclick="doLogin()">Sign In to Portal</button>
+        <div class="ls-divider">or try a demo account</div>
+        <div class="ls-demo-row">
+          <button class="ls-demo-btn" onclick="startDemo('physician')">👨‍⚕️ Physician View</button>
+          <button class="ls-demo-btn" onclick="startDemo('admin')">👩‍💼 Admin View</button>
+        </div>
+        <div style="margin-top:12px;background:rgba(26,111,255,.07);border:1px solid rgba(26,111,255,.15);border-radius:6px;padding:10px 13px;">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:rgba(26,111,255,.7);margin-bottom:5px;">Demo Credentials</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.45);line-height:1.7;">
+            Email: <span style="color:rgba(255,255,255,.7);font-family:'DM Mono',monospace">demo@memorial.org</span><br>
+            Password: <span style="color:rgba(255,255,255,.7);font-family:'DM Mono',monospace">vela2026</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Demo loading state -->
+      <div id="ls-loading" style="display:none;padding:20px 0;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:20px;text-align:center;">
+          <div style="width:44px;height:44px;border:3px solid rgba(26,111,255,.2);border-top-color:#1a6fff;border-radius:50%;animation:spin .8s linear infinite;"></div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:6px;" id="ls-loading-title">Signing in as Physician</div>
+            <div style="font-family:'DM Mono',monospace;font-size:11px;color:rgba(255,255,255,.35);" id="ls-loading-step">Authenticating…</div>
+          </div>
+          <div style="width:100%;display:flex;flex-direction:column;gap:7px;" id="ls-steps"></div>
+        </div>
+      </div>
+
+      <button class="ls-back" onclick="window.location.reload()">← Back to velahealth.io</button>
+    </div>
+  </div>
+</div>
+
+<div class="shell">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-logo">
+      <div>
+        <div class="logo-mark">Vela<span>.</span></div>
+        <div class="logo-hospital" id="top-hospital">Memorial General</div>
+      </div>
+    </div>
+    <div class="topbar-search">
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input class="search-input" placeholder="Search patients, MRN, symptoms…" id="global-search" oninput="globalSearch(this.value)">
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="sys-status"><span class="live-dot"></span> System Operational</div>
+      <div class="topbar-time" id="clock">--:--</div>
+      <button class="topbar-btn" onclick="openSettings()">⚙ Settings</button>
+      <div class="topbar-avatar" title="Dr. Rivera">DR</div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-section">Operations</div>
+    <div class="nav-item active" data-mode="board" onclick="setMode('board')">
+      <span class="nav-icon">📡</span>Live Board
+      <span class="nav-badge" id="nav-badge">14</span>
+    </div>
+    <div class="nav-item" data-mode="patients" onclick="setMode('patients')">
+      <span class="nav-icon">👤</span>Patients
+    </div>
+    <div class="nav-item" data-mode="documents" onclick="setMode('documents')">
+      <span class="nav-icon">📄</span>Documents
+    </div>
+    <div class="nav-item" data-mode="analytics" onclick="setMode('analytics')">
+      <span class="nav-icon">📊</span>Analytics
+    </div>
+    <div class="sidebar-section">Hospital</div>
+    <div class="nav-item" data-mode="departments" onclick="setMode('departments')">
+      <span class="nav-icon">🏥</span>Departments
+    </div>
+    <div class="nav-item" data-mode="staff" onclick="setMode('staff')">
+      <span class="nav-icon">👥</span>Staff
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-stat">
+        <span class="ss-label">Routed Today</span>
+        <span class="ss-val" id="sb-routed">187</span>
+      </div>
+      <div class="sidebar-stat">
+        <span class="ss-label">Accuracy</span>
+        <span class="ss-val" style="color:var(--t3)">98.2%</span>
+      </div>
+      <div class="sidebar-stat">
+        <span class="ss-label">Avg Time</span>
+        <span class="ss-val">1m 12s</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main" id="main">
+
+    <!-- WORKSPACE -->
+    <div class="workspace">
+
+      <!-- BOARD MODE -->
+      <div id="mode-board" class="workspace-body">
+        <div class="workspace-header">
+          <div>
+            <div class="ws-title">Live Call Board</div>
+            <div class="ws-subtitle" id="board-subtitle">14 active sessions · Memorial General Hospital · Updated just now</div>
+          </div>
+          <div class="ws-actions">
+            <div class="live-label"><span class="live-dot"></span> Live</div>
+            <button class="btn-sm btn-ghost" onclick="simulateNewCall()">+ Simulate Call</button>
+          </div>
+        </div>
+
+        <div class="kpi-row">
+          <div class="kpi" style="--kpi-color:var(--accent)">
+            <div class="kpi-label">Active Calls</div>
+            <div class="kpi-val" id="kpi-active">14</div>
+            <div class="kpi-change up">↑ 3 from 1h ago</div>
+          </div>
+          <div class="kpi" style="--kpi-color:var(--t1)">
+            <div class="kpi-label">T1 Critical</div>
+            <div class="kpi-val" style="color:var(--t1)" id="kpi-t1">3</div>
+            <div class="kpi-change dn">↑ 1 above baseline</div>
+          </div>
+          <div class="kpi" style="--kpi-color:var(--t2)">
+            <div class="kpi-label">T2 Urgent</div>
+            <div class="kpi-val" style="color:var(--t2)">28</div>
+            <div class="kpi-change up">↓ 2 from peak</div>
+          </div>
+          <div class="kpi" style="--kpi-color:var(--t3)">
+            <div class="kpi-label">Routed Today</div>
+            <div class="kpi-val" style="color:var(--t3)">187</div>
+            <div class="kpi-change up">↑ 12% vs yesterday</div>
+          </div>
+          <div class="kpi" style="--kpi-color:#7a8aff">
+            <div class="kpi-label">Avg Route Time</div>
+            <div class="kpi-val" style="font-size:20px;padding-top:3px">1m 12s</div>
+            <div class="kpi-change up">↓ 8s faster</div>
+          </div>
+        </div>
+
+        <div class="filter-bar">
+          <span class="filter-label">Filter:</span>
+          <button class="chip active" onclick="filterBoard(this,'all')">All</button>
+          <button class="chip t1" onclick="filterBoard(this,'t1')">T1 Critical</button>
+          <button class="chip t2" onclick="filterBoard(this,'t2')">T2 Urgent</button>
+          <button class="chip t3" onclick="filterBoard(this,'t3')">T3 Routine</button>
+          <button class="chip" onclick="filterBoard(this,'active')">Active</button>
+          <button class="chip" onclick="filterBoard(this,'routing')">Routing</button>
+          <div class="filter-spacer"></div>
+          <div class="live-label"><span class="live-dot"></span>&nbsp;<span id="filter-count">6 calls shown</span></div>
+        </div>
+
+        <div class="call-board" id="call-board"></div>
+      </div>
+
+
+      <!-- PATIENTS MODE -->
+      <div id="mode-patients" class="workspace-body" style="display:none">
+        <div class="workspace-header">
+          <div><div class="ws-title">Patient Records</div><div class="ws-subtitle">2,841 registered patients · Memorial General Hospital</div></div>
+          <div class="ws-actions">
+            <button class="btn-sm btn-ghost" id="pt-dl-btn" style="display:none" onclick="downloadPatientPDF()">📄 Download Record</button>
+            <button class="btn-sm btn-primary" onclick="openAddPatient()">+ Add Patient</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 380px;flex:1;overflow:hidden;min-height:0;">
+          <!-- Left: table -->
+          <div style="display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--border);">
+            <div class="pt-search-bar">
+              <input class="pt-search" placeholder="Search by name, MRN, condition…" oninput="filterPatients(this.value)">
+            </div>
+            <div class="pt-table-wrap" style="flex:1;overflow-y:auto;padding:0;">
+              <table class="pt-table" id="pt-table">
+                <thead>
+                  <tr>
+                    <th style="padding-left:20px">Patient</th><th>MRN</th><th>Age</th><th>Conditions</th><th>Last Visit</th><th>Allergies</th>
+                  </tr>
+                </thead>
+                <tbody id="pt-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+          <!-- Right: record panel -->
+          <div id="pt-record-panel" style="overflow-y:auto;background:var(--surface);display:flex;flex-direction:column;">
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--text3);padding:40px;text-align:center;">
+              <div style="font-size:36px;opacity:.25;">👤</div>
+              <div style="font-size:13px;">Click a patient name to view their full record</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DOCUMENTS MODE -->
+      <div id="mode-documents" class="workspace-body" style="display:none">
+        <div class="workspace-header">
+          <div><div class="ws-title">AI Clinical Documents</div><div class="ws-subtitle">187 documents generated today</div></div>
+          <div class="ws-actions">
+            <button class="btn-sm btn-ghost" onclick="showToast('Exporting all PDFs…')">Export All</button>
+          </div>
+        </div>
+        <div class="filter-bar">
+          <button class="chip active" onclick="setActiveChip(this)">All</button>
+          <button class="chip t1" onclick="setActiveChip(this)">T1 Critical</button>
+          <button class="chip t2" onclick="setActiveChip(this)">T2 Urgent</button>
+          <button class="chip t3" onclick="setActiveChip(this)">T3 Routine</button>
+          <button class="chip" onclick="setActiveChip(this)">Today</button>
+        </div>
+        <div class="docs-grid" id="docs-grid"></div>
+      </div>
+
+      <!-- ANALYTICS MODE -->
+      <div id="mode-analytics" class="workspace-body" style="display:none">
+        <div class="workspace-header">
+          <div><div class="ws-title">Analytics</div><div class="ws-subtitle">March 2026 · Memorial General Hospital</div></div>
+          <div class="ws-actions"><button class="btn-sm btn-ghost" onclick="showToast('CSV exported')">Export CSV</button></div>
+        </div>
+        <div class="analytics-scroll">
+          <div class="an-grid">
+            <div class="an-card"><div class="an-label">Total Calls / Month</div><div class="an-big">3,841</div><div class="an-change up">↑ 14% vs last month</div></div>
+            <div class="an-card"><div class="an-label">Staff Hours Saved</div><div class="an-big">248h</div><div class="an-change up">↑ 22% efficiency</div></div>
+            <div class="an-card"><div class="an-label">Routing Accuracy</div><div class="an-big">98.2%</div><div class="an-change up">↑ 0.4% from last month</div></div>
+            <div class="an-card"><div class="an-label">Avg Intake Time</div><div class="an-big" style="font-size:28px;padding-top:4px">1m 12s</div><div class="an-change up">↓ 38% vs pre-Vela</div></div>
+            <div class="an-card an-two">
+              <div class="an-label">Daily Call Volume — March 2026</div>
+              <div class="bar-chart" id="bar-chart"></div>
+            </div>
+            <div class="an-card">
+              <div class="an-label">Triage Distribution</div>
+              <div style="margin-top:12px">
+                <div class="hbar-row"><span class="hbar-lbl">T1 Critical</span><div class="hbar-track"><div class="hbar-fill" style="width:18%;background:var(--t1)"></div></div><span class="hbar-val">18%</span></div>
+                <div class="hbar-row"><span class="hbar-lbl">T2 Urgent</span><div class="hbar-track"><div class="hbar-fill" style="width:34%;background:var(--t2)"></div></div><span class="hbar-val">34%</span></div>
+                <div class="hbar-row"><span class="hbar-lbl">T3 Routine</span><div class="hbar-track"><div class="hbar-fill" style="width:48%;background:var(--t3)"></div></div><span class="hbar-val">48%</span></div>
+              </div>
+            </div>
+            <div class="an-card">
+              <div class="an-label">Top Departments</div>
+              <div style="margin-top:12px">
+                <div class="hbar-row"><span class="hbar-lbl">Emergency</span><div class="hbar-track"><div class="hbar-fill" style="width:72%;background:var(--accent)"></div></div><span class="hbar-val">72%</span></div>
+                <div class="hbar-row"><span class="hbar-lbl">Cardiology</span><div class="hbar-track"><div class="hbar-fill" style="width:48%;background:var(--accent)"></div></div><span class="hbar-val">48%</span></div>
+                <div class="hbar-row"><span class="hbar-lbl">Pediatrics</span><div class="hbar-track"><div class="hbar-fill" style="width:38%;background:var(--accent)"></div></div><span class="hbar-val">38%</span></div>
+                <div class="hbar-row"><span class="hbar-lbl">Neurology</span><div class="hbar-track"><div class="hbar-fill" style="width:28%;background:var(--accent)"></div></div><span class="hbar-val">28%</span></div>
+              </div>
+            </div>
+            <div class="an-card an-two">
+              <div class="an-label">Patient Experience (Pilot Survey)</div>
+              <div style="margin-top:12px">
+                <div class="hbar-row"><span class="hbar-lbl">Satisfaction</span><div class="hbar-track"><div class="hbar-fill" style="width:92%;background:var(--t3)"></div></div><span class="hbar-val">92%</span></div>
+                <div class="hbar-row"><span class="hbar-lbl">No Repeating</span><div class="hbar-track"><div class="hbar-fill" style="width:98%;background:var(--t3)"></div></div><span class="hbar-val">98%</span></div>
+                <div class="hbar-row"><span class="hbar-lbl">Ease of Use</span><div class="hbar-track"><div class="hbar-fill" style="width:96%;background:var(--t3)"></div></div><span class="hbar-val">96%</span></div>
+              </div>
+            </div>
+            <div class="an-card">
+              <div class="an-label">EHR Enrichment</div>
+              <div class="an-big">99.1%</div>
+              <div class="an-change up">All records synced</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DEPARTMENTS MODE -->
+      <div id="mode-departments" class="workspace-body" style="display:none">
+        <div class="workspace-header">
+          <div><div class="ws-title">Departments</div><div class="ws-subtitle">9 active departments · Memorial General Hospital</div></div>
+          <div class="ws-actions"><button class="btn-sm btn-primary" onclick="showToast('Add department form opened')">+ Department</button></div>
+        </div>
+        <div class="dept-grid-wrap"><div class="dept-cards" id="dept-cards"></div></div>
+      </div>
+
+      <!-- STAFF MODE -->
+      <div id="mode-staff" class="workspace-body" style="display:none">
+        <div class="workspace-header">
+          <div><div class="ws-title">Staff Directory</div><div class="ws-subtitle">124 active staff · Memorial General Hospital</div></div>
+          <div class="ws-actions"><button class="btn-sm btn-primary" onclick="showToast('Add staff form opened')">+ Add Staff</button></div>
+        </div>
+        <div class="staff-grid-wrap"><div class="staff-cards" id="staff-cards"></div></div>
+      </div>
+
+    </div><!-- /workspace -->
+
+    <!-- DETAIL PANEL -->
+    <div class="detail-panel hidden" id="detail-panel">
+      <div class="dp-header">
+        <div>
+          <div class="dp-name" id="dp-name">—</div>
+          <div class="dp-meta" id="dp-meta">—</div>
+          <div class="dp-triage" id="dp-triage">—</div>
+        </div>
+        <button class="dp-close" onclick="closeDetail()">×</button>
+      </div>
+      <div class="dp-body" id="dp-body"></div>
+      <div class="dp-actions">
+        <button class="action-btn ab-review" onclick="openReviewModal()">📋 Review Case</button>
+        <button class="action-btn ab-escalate" onclick="openEscalateModal()">⚠ Escalate</button>
+        <button class="action-btn ab-call" onclick="showToast('Connecting call…')">📞 Call Patient</button>
+        <button class="action-btn ab-route" onclick="openRouteModal()">🏥 Route to Dept</button>
+        <button class="action-btn ab-complete" onclick="markComplete()">✓ Mark Complete</button>
+        <button class="action-btn ab-pdf" onclick="downloadPDF()">📄 Download PDF</button>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- REVIEW MODAL -->
+<div class="overlay hidden" id="review-overlay" onclick="closeModalOutside(event,'review-overlay')">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="review-title">Case Review</div>
+      <button class="modal-close" onclick="closeModal('review-overlay')">×</button>
+    </div>
+    <div class="modal-body" id="review-body"></div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-ghost" onclick="closeModal('review-overlay')">Close</button>
+      <button class="btn-sm btn-danger" onclick="closeModal('review-overlay');openEscalateModal()">Escalate</button>
+      <button class="btn-sm btn-primary" onclick="const docId=document.getElementById('review-overlay').dataset.docId;if(docId)downloadDocPDF(parseInt(docId));else downloadPDF();closeModal('review-overlay')">Download PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- ESCALATE MODAL -->
+<div class="overlay hidden" id="esc-overlay" onclick="closeModalOutside(event,'esc-overlay')">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title" style="color:var(--t1)">⚠ Escalate Case</div>
+      <button class="modal-close" onclick="closeModal('esc-overlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="esc-patient-info" style="background:var(--surface2);border:1px solid var(--t1-border);border-radius:6px;padding:12px 14px;">
+        <div style="font-size:14px;font-weight:700;color:#fff" id="esc-name">—</div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);margin-top:3px" id="esc-meta">—</div>
+      </div>
+      <div class="form-row">
+        <div class="form-field"><label>Escalate To</label>
+          <select id="esc-to"><option>Department Head (on-call)</option><option>Attending Physician</option><option>Chief Medical Officer</option><option>Emergency Response Team</option></select>
+        </div>
+        <div class="form-field"><label>Priority</label>
+          <select id="esc-priority"><option>🔴 Immediate — 5 min</option><option>🟠 Urgent — 15 min</option><option>🟡 Elevated — 30 min</option></select>
+        </div>
+      </div>
+      <div class="form-field"><label>Reason</label><textarea placeholder="Briefly describe why this case is being escalated…"></textarea></div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)">Notify Via</div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);cursor:pointer"><input type="checkbox" checked style="accent-color:var(--t1)"> SMS to on-call physician</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);cursor:pointer"><input type="checkbox" checked style="accent-color:var(--t1)"> Pager alert</label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-ghost" onclick="closeModal('esc-overlay')">Cancel</button>
+      <button class="btn-sm btn-danger" onclick="confirmEscalate()">Confirm Escalation</button>
+    </div>
+  </div>
+</div>
+
+<!-- ROUTE MODAL -->
+<div class="overlay hidden" id="route-overlay" onclick="closeModalOutside(event,'route-overlay')">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title">🏥 Route to Department</div>
+      <button class="modal-close" onclick="closeModal('route-overlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="route-patient" style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:12px 14px;font-size:13px;color:var(--text2)"></div>
+      <div class="form-field"><label>Select Department</label>
+        <select id="route-dept">
+          <option>Emergency Department</option><option>Cardiology / ICU</option><option>Neurology / Stroke Unit</option>
+          <option>Pediatrics</option><option>Orthopedics</option><option>Primary Care</option>
+          <option>Allergy / Immunology</option><option>Oncology</option><option>Psychiatry</option>
+        </select>
+      </div>
+      <div class="form-field"><label>Priority Note</label><textarea placeholder="Any routing instructions for the receiving team…"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-ghost" onclick="closeModal('route-overlay')">Cancel</button>
+      <button class="btn-sm btn-primary" onclick="confirmRoute()">Confirm Routing</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS OVERLAY -->
+<div class="settings-overlay hidden" id="settings-overlay">
+  <div class="settings-topbar">
+    <button class="btn-sm btn-ghost" onclick="closeSettings()">← Back</button>
+    <div class="settings-title">Portal Settings</div>
+    <div style="flex:1"></div>
+    <button class="btn-sm btn-primary" onclick="saveSettings()">Save Changes</button>
+  </div>
+  <div class="settings-body">
+    <div class="settings-section">
+      <div class="settings-section-title">AI & Routing</div>
+      <div class="settings-section-desc">Configure how Vela processes and routes calls.</div>
+      <div class="setting-row"><div class="sr-left"><h4>Auto-route T1 Critical Calls</h4><p>Route critical calls immediately without staff confirmation.</p></div><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+      <div class="setting-row"><div class="sr-left"><h4>AI Document Generation</h4><p>Auto-generate clinical summaries for every call.</p></div><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+      <div class="setting-row"><div class="sr-left"><h4>EHR Data Enrichment</h4><p>Pull patient history into new call summaries.</p></div><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+      <div class="setting-row"><div class="sr-left"><h4>Real-time Staff Alerts</h4><p>Push notifications when critical calls are routed.</p></div><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-title">Portal & Access</div>
+      <div class="settings-section-desc">Manage portal configuration and security.</div>
+      <div class="setting-row"><div class="sr-left"><h4>Hospital Name</h4><p>Shown across portal and documents.</p></div><input class="settings-input" value="Memorial General Hospital"></div>
+      <div class="setting-row"><div class="sr-left"><h4>Two-Factor Authentication</h4><p>Require 2FA for all staff logins.</p></div><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+      <div class="setting-row"><div class="sr-left"><h4>Session Timeout</h4><p>Log out inactive sessions automatically.</p></div>
+        <select class="settings-input" style="cursor:pointer"><option>15 minutes</option><option selected>30 minutes</option><option>1 hour</option></select>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-title">Integrations</div>
+      <div class="settings-section-desc">Connect Vela to your hospital systems.</div>
+      <div class="setting-row"><div class="sr-left"><h4>Epic EHR</h4><p>Real-time patient record sync.</p></div>
+        <div style="display:flex;align-items:center;gap:10px"><span class="conn-badge conn-ok">● Connected</span><button class="btn-sm btn-ghost" onclick="showToast('Epic EHR disconnected')">Disconnect</button></div>
+      </div>
+      <div class="setting-row"><div class="sr-left"><h4>Insurance Verification API</h4><p>Live eligibility checking during calls.</p></div>
+        <div style="display:flex;align-items:center;gap:10px"><span class="conn-badge conn-ok">● Connected</span><button class="btn-sm btn-ghost" onclick="showToast('API disconnected')">Disconnect</button></div>
+      </div>
+      <div class="setting-row"><div class="sr-left"><h4>Slack Alerts</h4><p>Send critical alerts to Slack channels.</p></div>
+        <div style="display:flex;align-items:center;gap:10px"><span class="conn-badge conn-no">○ Not connected</span><button class="btn-sm btn-primary" onclick="showToast('Slack connection initiated…')">Connect</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD PATIENT MODAL -->
+<div class="overlay hidden" id="addpt-overlay" onclick="closeModalOutside(event,'addpt-overlay')">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-hdr">
+      <div class="modal-title">+ Add New Patient</div>
+      <button class="modal-close" onclick="closeModal('addpt-overlay')">×</button>
+    </div>
+    <div class="modal-body" id="addpt-body">
+
+      <!-- Step 1: Personal Info -->
+      <div id="addpt-step1">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;">Step 1 of 3 — Personal Information</div>
+        <div class="form-row">
+          <div class="form-field"><label>First Name *</label><input id="apt-fname" placeholder="Jane"></div>
+          <div class="form-field"><label>Last Name *</label><input id="apt-lname" placeholder="Smith"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-field"><label>Date of Birth *</label><input id="apt-dob" type="date"></div>
+          <div class="form-field"><label>Gender *</label>
+            <select id="apt-gender"><option value="">Select…</option><option>Male</option><option>Female</option><option>Non-binary</option><option>Prefer not to say</option></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field"><label>Phone Number</label><input id="apt-phone" placeholder="(415) 555-0000"></div>
+          <div class="form-field"><label>Blood Type</label>
+            <select id="apt-blood"><option value="">Unknown</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select>
+          </div>
+        </div>
+        <div class="form-field"><label>Emergency Contact (Name · Relationship · Phone)</label><input id="apt-emergency" placeholder="e.g. John Smith · Spouse · (415) 555-0001"></div>
+      </div>
+
+      <!-- Step 2: Medical Info -->
+      <div id="addpt-step2" style="display:none">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;">Step 2 of 3 — Medical Information</div>
+        <div class="form-field"><label>Active Conditions (separate with commas)</label><input id="apt-conditions" placeholder="e.g. Hypertension, Type 2 Diabetes"></div>
+        <div class="form-field"><label>Current Medications (separate with ·)</label><textarea id="apt-meds" placeholder="e.g. Metformin 1000mg · Lisinopril 10mg · Aspirin 81mg"></textarea></div>
+        <div class="form-field"><label>Allergies & Reactions</label><input id="apt-allergies" placeholder="e.g. Penicillin — Anaphylaxis (SEVERE), or None"></div>
+        <div style="background:rgba(255,50,50,.06);border:1px solid rgba(255,50,50,.2);border-radius:6px;padding:10px 13px;margin-top:2px;">
+          <div style="font-size:11px;color:rgba(255,130,130,.8);line-height:1.6;">⚠ Include severity (SEVERE, Moderate, Mild). Severe/anaphylaxis entries will trigger a red warning flag on this patient's record.</div>
+        </div>
+      </div>
+
+      <!-- Step 3: Insurance -->
+      <div id="addpt-step3" style="display:none">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;">Step 3 of 3 — Insurance & Coverage</div>
+        <div class="form-row">
+          <div class="form-field"><label>Insurance Carrier *</label><input id="apt-ins" placeholder="e.g. BlueCross PPO-A"></div>
+          <div class="form-field"><label>Member ID</label><input id="apt-insid" placeholder="e.g. BCX-7741"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-field"><label>Group Number</label><input id="apt-grp" placeholder="e.g. MG-002"></div>
+          <div class="form-field"><label>Deductible</label><input id="apt-ded" placeholder="e.g. $500"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-field"><label>Copay</label><input id="apt-copay" placeholder="e.g. $20"></div>
+          <div class="form-field"><label>Primary Care Physician</label><input id="apt-pcp" placeholder="e.g. Dr. Williams"></div>
+        </div>
+        <!-- Success preview -->
+        <div id="addpt-preview" style="display:none;background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.25);border-radius:7px;padding:14px;margin-top:4px;">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:8px;">Patient Summary Preview</div>
+          <div id="addpt-preview-body" style="font-size:12px;line-height:1.75;color:rgba(255,255,255,.7);"></div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer" id="addpt-footer">
+      <div style="display:flex;align-items:center;gap:6px;" id="addpt-steps-indicator">
+        <div class="addpt-step-dot active" id="dot1"></div>
+        <div class="addpt-step-dot" id="dot2"></div>
+        <div class="addpt-step-dot" id="dot3"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-left:auto;">
+        <button class="btn-sm btn-ghost" id="addpt-back-btn" style="display:none" onclick="addPatientStep('back')">← Back</button>
+        <button class="btn-sm btn-ghost" onclick="closeModal('addpt-overlay')">Cancel</button>
+        <button class="btn-sm btn-primary" id="addpt-next-btn" onclick="addPatientStep('next')">Next →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast hidden" id="toast"></div>
+
+<script>
+/* ─── DATA ─── */
+const CALLS = [
+  {id:1,name:'Marcus Treadwell',age:58,gender:'M',mrn:'MRN-00294',dept:'Cardiology → ICU',triage:'t1',status:'active',dur:'3m 14s',ts:'09:14',
+   issue:'Severe substernal chest pain radiating to left arm. Onset ~35 min. Rated 8/10. Diaphoresis, mild SOB.',
+   ai:'High suspicion <strong>STEMI</strong>. ACS pattern. EKG + troponin required immediately. Route to <strong>Cardiology → Cath Lab</strong>.',
+   vitals:[['BP','158/94','urgent'],['HR','104 bpm','warn'],['O₂ Sat','94%','warn'],['Last Visit','Feb 14, 2026','']],
+   history:'HTN (10yr), T2 Diabetes, prior MI 2019. Meds: Metformin, Lisinopril, Aspirin 81mg.',
+   allergies:'<strong style="color:var(--t1)">Penicillin — anaphylaxis</strong>',
+   insurance:'BlueCross PPO-A · #BCX-7741',family:'Wife: Linda Treadwell · (415) 555-0201'},
+  {id:2,name:'Rosa Villareal',age:71,gender:'F',mrn:'MRN-00871',dept:'Neurology → ER',triage:'t1',status:'routing',dur:'1m 02s',ts:'09:47',
+   issue:'Facial drooping (L), slurred speech, L arm weakness. Onset 20 min. Husband called.',
+   ai:'<strong>FAST criteria positive.</strong> Acute ischemic stroke. tPA window active. Route to <strong>Neurology → Stroke Team</strong>.',
+   vitals:[['BP','184/102','urgent'],['HR','88 bpm',''],['Speech','Slurred','urgent'],['Last Visit','Jan 22, 2026','']],
+   history:'A-Fib (warfarin), HTN, T2 Diabetes. INR 2.4 last check.',
+   allergies:'Sulfa drugs — rash',insurance:'Medicare A+B · #1EG4-UA7H',family:'Husband: Carlos Villareal · (510) 555-0388'},
+  {id:3,name:'Amara Jackson',age:34,gender:'F',mrn:'MRN-01145',dept:'Pediatrics',triage:'t2',status:'active',dur:'4m 48s',ts:'10:02',
+   issue:'Son Elijah (6): Fever 104.2°F for 18hrs, neck stiffness, refusing fluids.',
+   ai:'Rule out <strong>bacterial meningitis</strong>. Neck stiffness + high fever in 6yo. Route to <strong>Pediatric Emergency</strong>.',
+   vitals:[['Temp','104.2°F','urgent'],['Age','6 yrs',''],['Duration','18 hrs','warn'],['Last Ped','Jan 8, 2026','']],
+   history:'Pediatric proxy. Elijah: no chronic conditions, vaccinations current.',
+   allergies:'None on file',insurance:'Medi-Cal CA · #92847381J',family:'Father: DeShawn Jackson · (510) 555-0513'},
+  {id:4,name:'Derek Osei',age:45,gender:'M',mrn:'MRN-00503',dept:'Allergy / ER',triage:'t2',status:'routing',dur:'0m 34s',ts:'10:14',
+   issue:'Allergic reaction after restaurant meal. Hives spreading across torso and face.',
+   ai:'<strong>Moderate-severe urticaria.</strong> Monitor anaphylaxis. EpiPen ready. Route to <strong>Allergy / ER</strong>.',
+   vitals:[['HR','112 bpm','warn'],['Hives','Spreading','warn'],['Airway','Patent',''],['Last Visit','Nov 3, 2025','']],
+   history:'Known shellfish allergy. Prior reaction 2023. Meds: Cetirizine PRN.',
+   allergies:'<strong style="color:var(--t1)">Shellfish — hives/anaphylaxis</strong>',
+   insurance:'United Health PPO · #UH-5523-O',family:'Sister: Abena Osei · (415) 555-0950'},
+  {id:5,name:'Diane Kowalski',age:47,gender:'F',mrn:'MRN-00712',dept:'Orthopedics',triage:'t3',status:'routed',dur:'6m 20s',ts:'10:31',
+   issue:'3-week post-op follow-up, right TKR. Mild swelling, PT questions.',
+   ai:'<strong>Routine post-op follow-up.</strong> No DVT flags. Schedule Dr. Patel. Consider weight-bearing X-ray.',
+   vitals:[['Surgery','Mar 1, 2026',''],['Surgeon','Dr. Patel',''],['Swelling','Mild','warn'],['PT Week','3','']],
+   history:'OA right knee, TKR Mar 1 2026. Meds: Celecoxib, Acetaminophen.',
+   allergies:'NSAIDs — mild GI',insurance:'Aetna Choice Plus · #AET-KOW-8821',family:'Husband: Stan Kowalski · (650) 555-0785'},
+  {id:6,name:'Liam Chen',age:29,gender:'M',mrn:'MRN-01302',dept:'Primary Care',triage:'t3',status:'routed',dur:'2m 05s',ts:'10:43',
+   issue:'Adderall XR 20mg refill + annual lab order.',
+   ai:'<strong>Routine refill.</strong> Check PDMP compliance. Route to <strong>Primary Care — Dr. Williams</strong>.',
+   vitals:[['Condition','ADHD',''],['Med','Adderall XR',''],['Last Script','Feb 21, 2026',''],['Last Visit','Jan 15, 2026','']],
+   history:'ADHD (dx 2019). No other conditions. Annual labs due.',
+   allergies:'None',insurance:'Kaiser Permanente HMO · #KP-LC-4490',family:'Mother: Susan Chen · (415) 555-1025'},
+];
+
+const PATIENTS = [
+  {name:'Marcus Treadwell',mrn:'MRN-00294',age:58,dob:'Mar 4, 1968',gender:'Male',phone:'(415) 555-0194',blood:'A+',
+   conditions:'HTN (10yr), Type 2 Diabetes, Coronary Artery Disease, prior MI 2019',
+   meds:'Metformin 1000mg · Lisinopril 10mg · Aspirin 81mg · Atorvastatin 40mg',
+   allergies:'Penicillin — Anaphylaxis (SEVERE)',
+   last:'Feb 14, 2026',insurance:'BlueCross PPO-A',insDetail:'Member #BCX-7741 · Group MG-002 · Deductible $500 · Copay $20',
+   allergy:true,emergency:'Wife: Linda Treadwell · (415) 555-0201',
+   visits:[{date:'Feb 14, 2026',dept:'Cardiology',note:'Routine cardiac check. EKG normal.',doc:'Dr. Park'},{date:'Nov 8, 2025',dept:'Primary Care',note:'Diabetes management. HbA1c 7.2.',doc:'Dr. Williams'},{date:'Aug 3, 2025',dept:'Cardiology',note:'Stress test — mild ischemia.',doc:'Dr. Park'}]},
+  {name:'Rosa Villareal',mrn:'MRN-00871',age:71,dob:'Sep 12, 1954',gender:'Female',phone:'(510) 555-0387',blood:'O-',
+   conditions:'Atrial Fibrillation, Hypertension, Type 2 Diabetes',
+   meds:'Warfarin 5mg · Metoprolol 50mg · Metformin 500mg · Amlodipine 5mg',
+   allergies:'Sulfa drugs — Rash/Hives (Moderate)',
+   last:'Jan 22, 2026',insurance:'Medicare Part A+B',insDetail:'ID #1EG4-UA7H-XK72 · Secondary: AARP Supplement · Deductible $0',
+   allergy:true,emergency:'Husband: Carlos Villareal · (510) 555-0388',
+   visits:[{date:'Jan 22, 2026',dept:'Neurology',note:'A-Fib monitoring. INR 2.4.',doc:'Dr. Okonkwo'},{date:'Dec 1, 2025',dept:'Cardiology',note:'Echo — EF 55%, stable.',doc:'Dr. Park'},{date:'Oct 14, 2025',dept:'Primary Care',note:'Annual wellness. Flu vaccine.',doc:'Dr. Williams'}]},
+  {name:'Amara Jackson',mrn:'MRN-01145',age:34,dob:'Jul 29, 1991',gender:'Female',phone:'(510) 555-0512',blood:'B+',
+   conditions:'Seasonal Allergies, Asthma (mild, well-controlled)',
+   meds:'Albuterol inhaler (PRN) · Cetirizine 10mg · Fluticasone nasal spray',
+   allergies:'None on file',
+   last:'Jan 8, 2026',insurance:'Medi-Cal CA',insDetail:'BIC #92847381J · Deductible $0 · Copay $0–$3',
+   allergy:false,emergency:'Husband: DeShawn Jackson · (510) 555-0513',
+   visits:[{date:'Jan 8, 2026',dept:'Pediatrics (son)',note:'Elijah — well-child visit.',doc:'Dr. Reyes'},{date:'Sep 5, 2025',dept:'Primary Care',note:'Annual physical. All normal.',doc:'Dr. Williams'}]},
+  {name:'Diane Kowalski',mrn:'MRN-00712',age:47,dob:'Jul 17, 1978',gender:'Female',phone:'(650) 555-0784',blood:'A-',
+   conditions:'OA right knee (TKR Mar 2026), GERD, Hypothyroidism',
+   meds:'Levothyroxine 75mcg · Omeprazole 20mg · Celecoxib 200mg · Acetaminophen PRN',
+   allergies:'NSAIDs (traditional) — GI upset (Mild)',
+   last:'Mar 1, 2026',insurance:'Aetna Choice Plus',insDetail:'Member #AET-KOW-8821 · Group EMP-2240 · Deductible $1000 · Copay $30',
+   allergy:true,emergency:'Husband: Stan Kowalski · (650) 555-0785',
+   visits:[{date:'Mar 1, 2026',dept:'Orthopedics',note:'R TKR performed by Dr. Patel. Uncomplicated.',doc:'Dr. Patel'},{date:'Feb 14, 2026',dept:'Orthopedics',note:'Pre-op evaluation. Cleared.',doc:'Dr. Patel'},{date:'Jan 10, 2026',dept:'Endocrinology',note:'TSH 2.1 — stable.',doc:'Dr. Cohen'}]},
+  {name:'Derek Osei',mrn:'MRN-00503',age:45,dob:'Apr 3, 1980',gender:'Male',phone:'(415) 555-0948',blood:'O+',
+   conditions:'Shellfish Allergy, Seasonal Rhinitis',
+   meds:'Cetirizine 10mg PRN · EpiPen (carry at all times)',
+   allergies:'Shellfish — Hives/Anaphylaxis (SEVERE)',
+   last:'Nov 3, 2025',insurance:'United Health PPO',insDetail:'Member #UH-5523-O · Group WC-441 · Deductible $750 · Copay $25',
+   allergy:true,emergency:'Sister: Abena Osei · (415) 555-0950',
+   visits:[{date:'Nov 3, 2025',dept:'Allergy/Immunology',note:'Annual review. EpiPen renewed.',doc:'Dr. Singh'},{date:'Apr 20, 2025',dept:'Primary Care',note:'Annual physical.',doc:'Dr. Williams'}]},
+  {name:'Liam Chen',mrn:'MRN-01302',age:29,dob:'Dec 5, 1996',gender:'Male',phone:'(415) 555-1024',blood:'AB+',
+   conditions:'ADHD (combined type)',
+   meds:'Adderall XR 20mg (once daily)',
+   allergies:'None on file',
+   last:'Jan 15, 2026',insurance:'Kaiser Permanente HMO',insDetail:'Member #KP-LC-4490 · Group EMP-9320 · Deductible $500 · Copay $15',
+   allergy:false,emergency:'Mother: Susan Chen · (415) 555-1025',
+   visits:[{date:'Jan 15, 2026',dept:'Primary Care',note:'ADHD management. Script renewed.',doc:'Dr. Williams'},{date:'Sep 12, 2025',dept:'Primary Care',note:'Annual labs. All normal.',doc:'Dr. Williams'}]},
+  {name:'Elena Marchetti',mrn:'MRN-00198',age:62,dob:'Jun 18, 1963',gender:'Female',phone:'(415) 555-0762',blood:'A+',
+   conditions:'Breast Cancer (Stage II, chemo active), Hypertension',
+   meds:'Paclitaxel (cycle 4) · Trastuzumab · Lisinopril 10mg · Ondansetron PRN',
+   allergies:'Sulfa drugs — Rash (Moderate)',
+   last:'Mar 18, 2026',insurance:'Blue Shield PPO',insDetail:'Member #BS-MAR-0762 · Deductible $800 · Copay $40',
+   allergy:true,emergency:'Daughter: Sofia Marchetti · (415) 555-0763',
+   visits:[{date:'Mar 18, 2026',dept:'Oncology',note:'Chemo cycle 4. Tolerating well.',doc:'Dr. Zhang'},{date:'Mar 4, 2026',dept:'Oncology',note:'Pre-chemo labs. WBC 4.2.',doc:'Dr. Zhang'},{date:'Feb 19, 2026',dept:'Oncology',note:'Cycle 3 completed.',doc:'Dr. Zhang'}]},
+  {name:'James Okafor',mrn:'MRN-00844',age:34,dob:'Feb 14, 1992',gender:'Male',phone:'(510) 555-0844',blood:'B-',
+   conditions:'Bipolar I Disorder',
+   meds:'Lithium 900mg · Quetiapine 50mg · Lamotrigine 100mg',
+   allergies:'None on file',
+   last:'Mar 10, 2026',insurance:'Cigna HMO',insDetail:'Member #CIG-OKA-0844 · Group MH-220 · Deductible $600 · Copay $20',
+   allergy:false,emergency:'Sister: Ngozi Okafor · (510) 555-0845',
+   visits:[{date:'Mar 10, 2026',dept:'Psychiatry',note:'Med management. Lithium level 0.85.',doc:'Dr. Nguyen'},{date:'Feb 10, 2026',dept:'Psychiatry',note:'Monthly check-in. Stable mood.',doc:'Dr. Nguyen'}]},
+];
+
+const DOCS = [
+  {id:1,patient:'Marcus Treadwell',age:58,mrn:'MRN-00294',time:'Today 09:14',triage:'t1',dept:'Cardiology → ICU',summary:'Severe chest pain, STEMI suspicion. Immediate cath lab routing. EKG and troponin ordered.'},
+  {id:2,patient:'Rosa Villareal',age:71,mrn:'MRN-00871',time:'Today 09:47',triage:'t1',dept:'Neurology → ER',summary:'FAST-positive acute stroke. tPA window active. Stroke team activated immediately.'},
+  {id:3,patient:'Amara Jackson',age:34,mrn:'MRN-01145',time:'Today 10:02',triage:'t2',dept:'Pediatrics',summary:'Pediatric proxy. Child fever 104°F 18hrs, neck stiffness. Meningitis workup initiated.'},
+  {id:4,patient:'Derek Osei',age:45,mrn:'MRN-00503',time:'Today 10:14',triage:'t2',dept:'Allergy / ER',summary:'Shellfish allergic reaction, spreading urticaria. EpiPen standby. Benadryl + steroids on arrival.'},
+  {id:5,patient:'Diane Kowalski',age:47,mrn:'MRN-00712',time:'Today 10:31',triage:'t3',dept:'Orthopedics',summary:'Post-TKR 3-week follow-up. No DVT flags. Schedule Dr. Patel, consider X-ray.'},
+  {id:6,patient:'Liam Chen',age:29,mrn:'MRN-01302',time:'Today 10:43',triage:'t3',dept:'Primary Care',summary:'Adderall XR refill request. PDMP check recommended. Annual labs also requested.'},
+];
+
+const DEPTS = [
+  {icon:'🚨',name:'Emergency',head:'Dr. L. Torres',active:5,today:72,avg:'0m 58s',status:'busy'},
+  {icon:'🫀',name:'Cardiology',head:'Dr. S. Park',active:3,today:24,avg:'1m 08s',status:'ok'},
+  {icon:'🧠',name:'Neurology',head:'Dr. A. Okonkwo',active:1,today:12,avg:'1m 22s',status:'ok'},
+  {icon:'👶',name:'Pediatrics',head:'Dr. M. Reyes',active:2,today:18,avg:'1m 34s',status:'ok'},
+  {icon:'🦴',name:'Orthopedics',head:'Dr. R. Patel',active:1,today:14,avg:'1m 48s',status:'ok'},
+  {icon:'🩺',name:'Primary Care',head:'Dr. J. Williams',active:1,today:30,avg:'1m 05s',status:'ok'},
+  {icon:'🔬',name:'Oncology',head:'Dr. P. Zhang',active:0,today:8,avg:'2m 10s',status:'ok'},
+  {icon:'🧪',name:'Allergy / Immunology',head:'Dr. K. Singh',active:1,today:7,avg:'1m 18s',status:'ok'},
+  {icon:'🧠',name:'Psychiatry',head:'Dr. R. Nguyen',active:0,today:6,avg:'1m 55s',status:'ok'},
+];
+
+const STAFF = [
+  {name:'Dr. Sarah Park',role:'Attending',dept:'Cardiology',bg:'#1a6fff',initials:'SP',status:'on-duty'},
+  {name:'Dr. Adaeze Okonkwo',role:'Attending',dept:'Neurology',bg:'#7c3aed',initials:'AO',status:'on-duty'},
+  {name:'Dr. Luis Torres',role:'ER Director',dept:'Emergency',bg:'#dc2626',initials:'LT',status:'on-duty'},
+  {name:'Dr. Maria Reyes',role:'Pediatrician',dept:'Pediatrics',bg:'#059669',initials:'MR',status:'on-duty'},
+  {name:'Dr. Raj Patel',role:'Ortho Surgeon',dept:'Orthopedics',bg:'#d97706',initials:'RP',status:'on-call'},
+  {name:'Dr. James Williams',role:'Primary Care',dept:'Primary Care',bg:'#2563eb',initials:'JW',status:'on-duty'},
+  {name:'Dr. Priya Zhang',role:'Oncologist',dept:'Oncology',bg:'#7c3aed',initials:'PZ',status:'off-duty'},
+  {name:'Dr. Kamesh Singh',role:'Allergist',dept:'Allergy',bg:'#0891b2',initials:'KS',status:'on-duty'},
+  {name:'Nurse T. Rivera',role:'Head Nurse',dept:'Emergency',bg:'#dc2626',initials:'TR',status:'on-duty'},
+  {name:'Nurse A. Brooks',role:'Floor Nurse',dept:'Cardiology',bg:'#1a6fff',initials:'AB',status:'on-duty'},
+  {name:'Nurse L. Kim',role:'PICU Nurse',dept:'Pediatrics',bg:'#059669',initials:'LK',status:'on-call'},
+  {name:'Admin C. Davis',role:'Coordinator',dept:'Administration',bg:'#64748b',initials:'CD',status:'on-duty'},
+];
+
+/* ─── STATE ─── */
+let currentMode = 'board';
+let selectedCallId = null;
+let activeFilter = 'all';
+let toastTimer = null;
+let simCallId = 100;
+
+/* ─── CLOCK ─── */
+function updateClock(){
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+setInterval(updateClock, 1000); updateClock();
+
+/* ─── MODE SWITCHING ─── */
+function setMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+  ['board','patients','documents','analytics','departments','staff'].forEach(m => {
+    document.getElementById('mode-'+m).style.display = m===mode ? 'flex' : 'none';
+  });
+  // Close detail panel when switching modes
+  if (mode !== 'board') closeDetail();
+  // Render on first visit
+  if (mode === 'documents') renderDocs();
+  if (mode === 'departments') renderDepts();
+  if (mode === 'staff') renderStaff();
+  if (mode === 'patients') renderPatients();
+  if (mode === 'analytics') renderAnalytics();
+}
+
+/* ─── BOARD ─── */
+function renderBoard(filter = activeFilter) {
+  activeFilter = filter;
+  const board = document.getElementById('call-board');
+  const filtered = CALLS.filter(c => {
+    if (filter === 'all') return true;
+    if (filter === 't1'||filter === 't2'||filter === 't3') return c.triage === filter;
+    if (filter === 'active') return c.status === 'active';
+    if (filter === 'routing') return c.status === 'routing';
+    return true;
+  });
+  document.getElementById('filter-count').textContent = filtered.length + ' call' + (filtered.length!==1?'s':'') + ' shown';
+  board.innerHTML = filtered.map(c => renderCallCard(c)).join('');
+  if (selectedCallId) {
+    const sel = board.querySelector(`[data-id="${selectedCallId}"]`);
+    if (sel) sel.classList.add('selected');
+  }
+}
+
+function renderCallCard(c) {
+  const triLabel = c.triage==='t1'?'T1':c.triage==='t2'?'T2':'T3';
+  const statusHtml = c.status==='active'?`<span class="status-pill s-active">Active</span>`:
+    c.status==='routing'?`<span class="status-pill s-routing">Routing</span>`:
+    c.status==='processing'?`<span class="status-pill s-processing">Processing</span>`:
+    `<span class="status-pill s-routed">Routed</span>`;
+  return `<div class="call-card ${c.triage}" data-id="${c.id}" onclick="selectCall(${c.id})">
+    <div class="cc-accent"></div>
+    <div class="cc-triage"><div class="triage-badge">${triLabel}</div></div>
+    <div class="cc-info">
+      <div class="cc-name">${c.name}, ${c.age}</div>
+      <div class="cc-detail">${c.mrn} · ${c.issue.substring(0,60)}…</div>
+    </div>
+    <div class="cc-dept" style="font-size:11px">${c.dept}</div>
+    <div class="cc-status-wrap">${statusHtml}</div>
+    <div class="cc-time">${c.ts}<br><span style="color:var(--text3)">${c.dur}</span></div>
+    <div class="cc-actions">
+      <button class="mini-btn mb-review" onclick="event.stopPropagation();selectCall(${c.id});openReviewModal()">Review</button>
+      ${c.triage==='t1'?`<button class="mini-btn mb-esc" onclick="event.stopPropagation();selectCall(${c.id});openEscalateModal()">Esc</button>`:''}
+    </div>
+  </div>`;
+}
+
+function filterBoard(btn, f) {
+  document.querySelectorAll('.filter-bar .chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  renderBoard(f);
+}
+
+function selectCall(id) {
+  selectedCallId = id;
+  const c = CALLS.find(x => x.id === id);
+  if (!c) return;
+  // highlight
+  document.querySelectorAll('.call-card').forEach(el => el.classList.remove('selected'));
+  const card = document.querySelector(`[data-id="${id}"]`);
+  if (card) card.classList.add('selected');
+  // open detail
+  openDetail(c);
+}
+
+/* ─── DETAIL PANEL ─── */
+function openDetail(c) {
+  const panel = document.getElementById('detail-panel');
+  const main = document.getElementById('main');
+  panel.classList.remove('hidden');
+  main.classList.add('detail-open');
+
+  document.getElementById('dp-name').textContent = c.name + ', ' + c.age;
+  document.getElementById('dp-meta').textContent = c.mrn + ' · ' + c.gender + ' · ' + c.ts;
+  const triC = c.triage==='t1'?'t1':c.triage==='t2'?'t2':'t3';
+  const triL = c.triage==='t1'?'⚠ T1 Critical':c.triage==='t2'?'⚡ T2 Urgent':'✓ T3 Routine';
+  const triPill = document.getElementById('dp-triage');
+  triPill.className = 'dp-triage ' + triC;
+  triPill.innerHTML = `<span class="live-dot ${triC}"></span>${triL}`;
+
+  document.getElementById('dp-body').innerHTML = `
+    <div class="dp-section fade-up">
+      <div class="dp-sec-hdr"><span class="dp-sec-title">Routing</span><span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--accent)">→ ${c.dept}</span></div>
+    </div>
+    <div class="dp-section fade-up" style="animation-delay:.05s">
+      <div class="dp-sec-hdr"><span class="dp-sec-title">Presenting Issue</span></div>
+      <div class="dp-sec-body">${c.issue}</div>
+    </div>
+    <div class="dp-section fade-up" style="animation-delay:.08s">
+      <div class="dp-sec-hdr"><span class="dp-sec-title">AI Clinical Assessment</span></div>
+      <div class="dp-sec-body">${c.ai}</div>
+    </div>
+    <div class="dp-section fade-up" style="animation-delay:.11s">
+      <div class="dp-sec-hdr"><span class="dp-sec-title">Vitals</span></div>
+      <div class="vitals-grid">${c.vitals.map(([l,v,cl])=>`<div class="vital"><div class="vital-lbl">${l}</div><div class="vital-val ${cl}">${v}</div></div>`).join('')}</div>
+    </div>
+    <div class="dp-section fade-up" style="animation-delay:.14s">
+      <div class="dp-sec-hdr"><span class="dp-sec-title">Medical History</span></div>
+      <div class="dp-sec-body">${c.history}</div>
+    </div>
+    <div class="dp-section fade-up" style="animation-delay:.17s">
+      <div class="dp-sec-hdr"><span class="dp-sec-title">Allergies</span></div>
+      <div class="dp-sec-body">${c.allergies}</div>
+    </div>
+    <div class="dp-section fade-up" style="animation-delay:.2s">
+      <div class="dp-sec-hdr"><span class="dp-sec-title">Insurance</span></div>
+      <div class="dp-sec-body">${c.insurance}</div>
+    </div>
+    <div class="dp-section fade-up" style="animation-delay:.23s">
+      <div class="dp-sec-hdr"><span class="dp-sec-title">Family / Emergency Contact</span></div>
+      <div class="dp-sec-body">${c.family}</div>
+    </div>`;
+}
+
+function closeDetail() {
+  document.getElementById('detail-panel').classList.add('hidden');
+  document.getElementById('main').classList.remove('detail-open');
+  document.querySelectorAll('.call-card').forEach(el => el.classList.remove('selected'));
+  selectedCallId = null;
+}
+
+/* ─── REVIEW MODAL ─── */
+function openReviewModal() {
+  const c = CALLS.find(x => x.id === selectedCallId);
+  if (!c) { showToast('Select a call first'); return; }
+  document.getElementById('review-title').textContent = 'Case Review — ' + c.name;
+  document.getElementById('review-body').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-field"><label>Presenting Issue</label><div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:12px;line-height:1.7;color:var(--text2)">${c.issue}</div></div>
+      <div class="form-field"><label>AI Assessment</label><div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:12px;line-height:1.7;color:var(--text2)">${c.ai}</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+      ${c.vitals.map(([l,v,cl])=>`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px;"><div style="font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:4px">${l}</div><div style="font-size:14px;font-weight:700;color:${cl==='urgent'?'var(--t1)':cl==='warn'?'var(--t2)':'#fff'}">${v}</div></div>`).join('')}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-field"><label>History & Allergies</label><div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:12px;line-height:1.7;color:var(--text2)">${c.history}<br><br>Allergies: ${c.allergies}</div></div>
+      <div class="form-field"><label>Insurance & Contact</label><div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:12px;line-height:1.7;color:var(--text2)">${c.insurance}<br><br>${c.family}</div></div>
+    </div>
+    <div class="form-field"><label>Physician Notes</label><textarea placeholder="Add clinical notes, observations, or instructions…" style="min-height:60px"></textarea></div>
+    <div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Physician Checklist</div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        ${['Patient identity & MRN verified','Allergy list reviewed','Medications checked for interactions','Insurance verified','Triage level confirmed','Department notified and ready'].map((item,i)=>
+          `<label style="display:flex;align-items:center;gap:9px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="ck${i}" style="accent-color:var(--accent)"> ${item}</label>`
+        ).join('')}
+      </div>
+    </div>`;
+  document.getElementById('review-overlay').classList.remove('hidden');
+}
+
+/* ─── ESCALATE MODAL ─── */
+function openEscalateModal() {
+  const c = CALLS.find(x => x.id === selectedCallId);
+  if (!c) { showToast('Select a call first'); return; }
+  document.getElementById('esc-name').textContent = c.name + ', ' + c.age;
+  document.getElementById('esc-meta').textContent = c.mrn + ' · ' + c.dept + ' · ' + (c.triage==='t1'?'T1 Critical':c.triage==='t2'?'T2 Urgent':'T3 Routine');
+  document.getElementById('esc-overlay').classList.remove('hidden');
+}
+function confirmEscalate() {
+  const to = document.getElementById('esc-to').value;
+  closeModal('esc-overlay');
+  showToast('⚠ Escalation sent to ' + to, true);
+}
+
+/* ─── ROUTE MODAL ─── */
+function openRouteModal() {
+  const c = CALLS.find(x => x.id === selectedCallId);
+  if (!c) { showToast('Select a call first'); return; }
+  document.getElementById('route-patient').textContent = c.name + ', ' + c.age + ' · ' + c.mrn + ' · Current: ' + c.dept;
+  document.getElementById('route-overlay').classList.remove('hidden');
+}
+function confirmRoute() {
+  const dept = document.getElementById('route-dept').value;
+  closeModal('route-overlay');
+  showToast('✓ Routed to ' + dept);
+  // Update the call status visually
+  const c = CALLS.find(x => x.id === selectedCallId);
+  if (c) { c.dept = dept; c.status = 'routing'; renderBoard(); if(selectedCallId) selectCall(selectedCallId); }
+}
+
+function markComplete() {
+  const c = CALLS.find(x => x.id === selectedCallId);
+  if (c) { c.status = 'routed'; renderBoard(); closeDetail(); showToast('✓ Case marked complete'); }
+}
+
+/* ─── PATIENTS ─── */
+let selectedPatientIdx = null;
+
+function renderPatients(q = '') {
+  const rows = PATIENTS.filter(p => !q || p.name.toLowerCase().includes(q.toLowerCase()) || p.mrn.toLowerCase().includes(q.toLowerCase()) || p.conditions.toLowerCase().includes(q.toLowerCase()));
+  document.getElementById('pt-tbody').innerHTML = rows.map((p, i) => {
+    const origIdx = PATIENTS.indexOf(p);
+    return `<tr onclick="selectPatient(${origIdx}, this)" style="cursor:pointer;">
+      <td style="padding-left:20px">
+        <div style="font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;">
+          <span style="width:28px;height:28px;border-radius:50%;background:#1a6fff;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;">${p.name.split(' ').map(x=>x[0]).join('').substring(0,2)}</span>
+          ${p.name}
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-top:3px;padding-left:36px;">${p.mrn}</div>
+      </td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;">${p.mrn}</td>
+      <td>${p.age}</td>
+      <td style="font-size:12px;max-width:200px;">${p.conditions}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;">${p.last}</td>
+      <td>${p.allergy ? '<span style="font-family:\'DM Mono\',monospace;font-size:9px;padding:2px 7px;border-radius:3px;background:var(--t1-bg);color:var(--t1);border:1px solid var(--t1-border)">⚠ ALLERGY</span>' : '<span style="color:var(--text3);font-size:12px;">—</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filterPatients(q) { renderPatients(q); }
+
+function selectPatient(idx, row) {
+  selectedPatientIdx = idx;
+  // Highlight row
+  document.querySelectorAll('#pt-tbody tr').forEach(r => r.classList.remove('selected'));
+  if (row) row.classList.add('selected');
+  // Show download button
+  const dlBtn = document.getElementById('pt-dl-btn');
+  if (dlBtn) dlBtn.style.display = 'inline-flex';
+
+  const p = PATIENTS[idx];
+  const panel = document.getElementById('pt-record-panel');
+
+  const sectionBg = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:10px;';
+  const hdrStyle = 'padding:8px 12px;border-bottom:1px solid var(--border);font-family:\'DM Mono\',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);';
+  const bodyStyle = 'padding:10px 12px;font-size:12px;line-height:1.75;color:rgba(255,255,255,.7);';
+  const isSevereAllergy = p.allergies.toLowerCase().includes('anaphylaxis') || p.allergies.toLowerCase().includes('severe');
+
+  panel.innerHTML = `
+    <div style="padding:16px 16px 0;animation:fadeUp .25s ease;">
+      <!-- Identity -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <div style="width:46px;height:46px;border-radius:50%;background:#1a6fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0;">
+          ${p.name.split(' ').map(x=>x[0]).join('').substring(0,2)}
+        </div>
+        <div>
+          <div style="font-family:'DM Serif Display',serif;font-size:18px;color:#fff;line-height:1.2;">${p.name}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-top:3px;">${p.age} yrs · ${p.gender} · ${p.mrn} · DOB: ${p.dob}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);">${p.blood} · ${p.phone}</div>
+        </div>
+      </div>
+
+      <!-- Conditions -->
+      <div style="${sectionBg}">
+        <div style="${hdrStyle}">Active Conditions</div>
+        <div style="${bodyStyle}">${p.conditions.split(',').map(c=>`<div style="padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);">${c.trim()}</div>`).join('')}</div>
+      </div>
+
+      <!-- Medications -->
+      <div style="${sectionBg}">
+        <div style="${hdrStyle}">Current Medications</div>
+        <div style="${bodyStyle}">${p.meds.split('·').map(m=>`<div style="padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);">· ${m.trim()}</div>`).join('')}</div>
+      </div>
+
+      <!-- Allergies -->
+      <div style="background:${isSevereAllergy?'rgba(255,50,50,.07)':'var(--surface2)'};border:1px solid ${isSevereAllergy?'rgba(255,50,50,.3)':'var(--border)'};border-radius:6px;overflow:hidden;margin-bottom:10px;">
+        <div style="${hdrStyle}color:${isSevereAllergy?'var(--t1)':'var(--accent)'};">${isSevereAllergy?'⚠ ALLERGIES — SEVERE RISK':'Allergies'}</div>
+        <div style="${bodyStyle}color:${isSevereAllergy?'rgba(255,130,130,.9)':'rgba(255,255,255,.7)'};">${p.allergies}</div>
+      </div>
+
+      <!-- Insurance -->
+      <div style="${sectionBg}">
+        <div style="${hdrStyle}">Insurance & Coverage</div>
+        <div style="${bodyStyle}">
+          <div style="margin-bottom:3px;"><strong style="color:rgba(255,255,255,.85)">${p.insurance}</strong></div>
+          <div style="color:var(--text3);font-size:11px;">${p.insDetail}</div>
+        </div>
+      </div>
+
+      <!-- Emergency Contact -->
+      <div style="${sectionBg}">
+        <div style="${hdrStyle}">Emergency Contact</div>
+        <div style="${bodyStyle}">${p.emergency}</div>
+      </div>
+
+      <!-- Recent Visits -->
+      <div style="${sectionBg}">
+        <div style="${hdrStyle}">Recent Visits</div>
+        <div style="padding:8px 12px;">
+          ${p.visits.map(v=>`
+            <div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);">
+              <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);width:88px;flex-shrink:0;">${v.date}</div>
+              <div>
+                <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,.8);">${v.dept}</div>
+                <div style="font-size:11px;color:var(--text3);margin-top:2px;">${v.note}</div>
+              </div>
+              <div style="margin-left:auto;font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);flex-shrink:0;">${v.doc}</div>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <!-- Download button -->
+      <button onclick="downloadPatientPDF()" style="width:100%;margin:4px 0 20px;padding:11px;background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;font-family:'Syne',sans-serif;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">
+        📄 Download Patient Record PDF
+      </button>
+    </div>`;
+}
+
+function downloadPatientPDF() {
+  if (selectedPatientIdx === null) { showToast('Select a patient first'); return; }
+  const p = PATIENTS[selectedPatientIdx];
+  showToast('Generating patient record PDF…');
+  loadJsPDF(() => buildPatientPDF(p));
+}
+
+function buildPatientPDF(p) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const W = 210, M = 18, cW = W - M * 2;
+  let y = 0;
+  const now = new Date();
+  const hosp = document.getElementById('top-hospital').textContent + ' Hospital';
+  const isSevere = p.allergies.toLowerCase().includes('anaphylaxis') || p.allergies.toLowerCase().includes('severe');
+
+  const sf = (st, sz, r=25, g=30, b=45) => { doc.setFont('helvetica',st); doc.setFontSize(sz); doc.setTextColor(r,g,b); };
+  const fb = (x,y,w,h,R,G,B) => { doc.setFillColor(R,G,B); doc.rect(x,y,w,h,'F'); };
+  const fbr = (x,y,w,h,R,G,B,rd=2) => { doc.setFillColor(R,G,B); doc.roundedRect(x,y,w,h,rd,rd,'F'); };
+  const stk = (x,y,w,h,R,G,B,lw=0.3,rd=2) => { doc.setDrawColor(R,G,B); doc.setLineWidth(lw); doc.roundedRect(x,y,w,h,rd,rd,'S'); };
+  const wrap = (txt,x,sy,mW,lh=6.5) => { const ls=doc.splitTextToSize(String(txt),mW); ls.forEach((l,i)=>doc.text(l,x,sy+i*lh)); return sy+ls.length*lh; };
+  const sec = (title, r, g, b) => {
+    fb(M,y,4,7,r,g,b); sf('bold',10,r,g,b); doc.text(title,M+7,y+5.5); y+=11;
+    doc.setDrawColor(r,g,b); doc.setLineWidth(.15); doc.line(M,y,W-M,y); y+=5;
+  };
+  const row = (label, val, valR=30, valG=36, valB=58) => {
+    fbr(M,y,cW,9,248,249,253,1); stk(M,y,cW,9,218,222,235,.2,1);
+    sf('bold',8,95,108,140); doc.text(label,M+4,y+6.2);
+    sf('normal',9,valR,valG,valB); doc.text(String(val),M+52,y+6.2);
+    y+=11;
+  };
+  const pageCheck = (n=28) => { if(y+n>278){doc.addPage();y=18;fb(0,0,W,8,15,140,100);fb(0,6,W,2,8,105,75);sf('normal',7,180,235,215);doc.text(`${p.name}  ·  ${p.mrn}  (continued)`,W-M,5.5,{align:'right'});doc.text(hosp,M,5.5);y=16;} };
+
+  // ── HEADER — teal/green theme for patient records ──
+  fb(0,0,W,52,15,140,100);
+  fb(0,44,W,8,8,105,75);
+  sf('bold',28,255,255,255); doc.text('Vela.',M,20);
+  sf('normal',9,180,235,215); doc.text('Hospital Intelligence Platform',M,28);
+  sf('bold',7,180,235,215); doc.text('PATIENT HEALTH RECORD  ·  CONFIDENTIAL  ·  HIPAA PROTECTED',M,35);
+  sf('bold',11,255,255,255); doc.text(hosp,W-M,18,{align:'right'});
+  sf('normal',8,180,235,215);
+  doc.text(`${now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}  ·  ${now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}`,W-M,26,{align:'right'});
+  y=60;
+
+  // ── PATIENT IDENTITY CARD ──
+  fbr(M,y,cW,32,242,250,247,3); stk(M,y,cW,32,175,225,205,.5,3);
+  fb(M,y,5,32,15,140,100);
+  // Avatar circle
+  doc.setFillColor(15,140,100); doc.circle(M+16,y+16,9,'F');
+  const ini = p.name.split(' ').map(x=>x[0]).join('').substring(0,2);
+  sf('bold',10,255,255,255); doc.text(ini,M+16,y+18.5,{align:'center'});
+  sf('bold',17,20,30,52); doc.text(p.name,M+30,y+11);
+  sf('normal',9,72,88,120); doc.text(`${p.age} yrs  ·  ${p.gender}  ·  ${p.mrn}  ·  DOB: ${p.dob}`,M+30,y+19);
+  sf('normal',8,105,120,152); doc.text(`Blood Type: ${p.blood}  ·  ${p.phone}`,M+30,y+26);
+  y+=40;
+
+  // ── CONDITIONS ──
+  sec('ACTIVE CONDITIONS',20,120,75);
+  p.conditions.split(',').forEach(cond => {
+    fbr(M,y,cW,9,242,252,248,1); stk(M,y,cW,9,175,228,205,.2,1);
+    doc.setFillColor(15,140,100); doc.circle(M+5.5,y+4.5,1.8,'F');
+    sf('normal',10,28,42,55); doc.text(cond.trim(),M+10,y+6.2);
+    y+=11;
+  });
+  y+=4;
+
+  // ── MEDICATIONS ──
+  pageCheck();
+  sec('CURRENT MEDICATIONS',40,140,70);
+  p.meds.split('·').forEach(med => {
+    if(!med.trim()) return;
+    fbr(M,y,cW,9,243,252,246,1); stk(M,y,cW,9,168,225,190,.2,1);
+    doc.setFillColor(30,160,80); doc.circle(M+5.5,y+4.5,1.8,'F');
+    sf('normal',10,28,48,38); doc.text(med.trim(),M+10,y+6.2);
+    y+=11;
+  });
+  y+=4;
+
+  // ── ALLERGIES ──
+  pageCheck();
+  if(isSevere){
+    fbr(M,y,cW,10,255,242,242,2); stk(M,y,cW,10,215,38,38,.45,2); fb(M,y,5,10,215,38,38);
+    sf('bold',9,195,22,22); doc.text('⚠  ALLERGIES — SEVERE RISK',M+8,y+7); y+=14;
+    sf('bold',10.5,195,22,22); y=wrap(p.allergies,M,y,cW,6.8)+8;
+  } else {
+    sec('ALLERGIES',120,40,40);
+    sf('normal',10.5,30,36,58); y=wrap(p.allergies||'None on file',M,y,cW,6.8)+8;
+  }
+
+  // ── INSURANCE ──
+  pageCheck();
+  sec('INSURANCE & COVERAGE',0,105,165);
+  row('Carrier',p.insurance);
+  const parts = p.insDetail.split('·');
+  parts.forEach(part => { if(part.trim()) row(part.split(' ')[0], part.trim(), 30, 36, 58); });
+  y+=4;
+
+  // ── EMERGENCY CONTACT ──
+  pageCheck();
+  sec('EMERGENCY CONTACT',75,130,55);
+  sf('normal',10.5,30,36,58); y=wrap(p.emergency,M,y,cW,6.8)+8;
+
+  // ── RECENT VISITS ──
+  pageCheck(40);
+  sec('RECENT VISITS',95,55,165);
+  p.visits.forEach(v => {
+    pageCheck(22);
+    fbr(M,y,cW,18,248,246,254,2); stk(M,y,cW,18,212,206,238,.25,2); fb(M,y,5,18,95,55,165);
+    sf('bold',8,95,55,165); doc.text(v.date,M+8,y+7);
+    sf('bold',10,28,32,56); doc.text(v.dept,M+8,y+14);
+    sf('normal',8,78,83,110); doc.text(v.note,M+65,y+7);
+    sf('normal',8,115,90,180); doc.text(v.doc,W-M-4,y+7,{align:'right'});
+    y+=20;
+  });
+
+  // ── FOOTER ALL PAGES ──
+  const pages = doc.getNumberOfPages();
+  for(let pg=1;pg<=pages;pg++){
+    doc.setPage(pg);
+    fb(0,286,W,11,15,140,100); fb(0,286,W,1.5,8,105,75);
+    sf('normal',7,180,235,215);
+    doc.text('Vela Hospital Intelligence  ·  Patient Health Record  ·  HIPAA Protected',W/2,292.5,{align:'center'});
+    doc.text(`Page ${pg} / ${pages}`,W-M,292.5,{align:'right'});
+    doc.text(hosp,M,292.5);
+  }
+
+  doc.save(`Vela_${p.name.replace(/ /g,'_')}_${p.mrn}_HealthRecord.pdf`);
+  showToast(`✓ Downloaded: ${p.name} — Patient Record`);
+}
+
+
+/* ─── DOCUMENTS ─── */
+let activeDocFilter = 'all';
+
+function renderDocs(filter) {
+  if (filter !== undefined) activeDocFilter = filter;
+  const triC = {t1:'var(--t1)',t2:'var(--t2)',t3:'var(--t3)'};
+  const triBg = {t1:'var(--t1-bg)',t2:'var(--t2-bg)',t3:'var(--t3-bg)'};
+  const triB = {t1:'var(--t1-border)',t2:'var(--t2-border)',t3:'var(--t3-border)'};
+  const triL = {t1:'T1 Critical',t2:'T2 Urgent',t3:'T3 Routine'};
+
+  const filtered = DOCS.filter(d => {
+    if (activeDocFilter === 'all' || activeDocFilter === 'today') return true;
+    return d.triage === activeDocFilter;
+  });
+
+  const grid = document.getElementById('docs-grid');
+  if (!grid) return;
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px;color:var(--text3);gap:12px;"><div style="font-size:32px;opacity:.25">📄</div><div style="font-size:13px">No documents match this filter</div></div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(d => `
+    <div class="doc-card" data-triage="${d.triage}" onclick="openDocModal(${d.id})">
+      <div class="doc-card-top">
+        <div style="font-size:22px">📋</div>
+        <span class="doc-triage" style="background:${triBg[d.triage]};color:${triC[d.triage]};border:1px solid ${triB[d.triage]}">${triL[d.triage]}</span>
+      </div>
+      <div class="doc-patient">${d.patient}, ${d.age}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-bottom:8px">${d.mrn} · ${d.dept}</div>
+      <div class="doc-summary">${d.summary}</div>
+      <div class="doc-footer">
+        <span class="doc-time">${d.time}</span>
+        <button class="doc-dl" onclick="event.stopPropagation();downloadDocPDF(${d.id})">↓ PDF</button>
+      </div>
+    </div>`).join('');
+}
+
+function setActiveChip(el) {
+  const bar = el.closest('.filter-bar');
+  bar.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+
+  // Only filter docs if we're in the documents panel
+  const docsBar = document.querySelector('#mode-documents .filter-bar');
+  if (bar === docsBar) {
+    const label = el.textContent.trim().toLowerCase();
+    const filter = label === 'all' ? 'all'
+      : label === 't1 critical' ? 't1'
+      : label === 't2 urgent' ? 't2'
+      : label === 't3 routine' ? 't3'
+      : label === 'today' ? 'today'
+      : 'all';
+    renderDocs(filter);
+  }
+}
+
+function openDocModal(id) {
+  const d = DOCS.find(x => x.id === id);
+  if (!d) return;
+  const c = CALLS.find(x => x.name === d.patient) || {};
+  const triC = {t1:'var(--t1)',t2:'var(--t2)',t3:'var(--t3)'};
+  const triL = {t1:'T1 Critical',t2:'T2 Urgent',t3:'T3 Routine'};
+
+  document.getElementById('review-title').innerHTML = `
+    <span style="font-size:14px;color:${triC[d.triage]};font-family:'DM Mono',monospace;font-weight:600;text-transform:uppercase;margin-right:10px;">${triL[d.triage]}</span>
+    ${d.patient}`;
+
+  document.getElementById('review-body').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;">Patient</div>
+        <div style="font-size:13px;font-weight:600;color:#fff;">${d.patient}, ${d.age}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-top:3px;">${d.mrn}</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;">Routing</div>
+        <div style="font-size:13px;font-weight:600;color:#fff;">${d.dept}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-top:3px;">${d.time}</div>
+      </div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;">AI Clinical Summary</div>
+      <div style="font-size:13px;line-height:1.7;color:rgba(255,255,255,.75);">${d.summary}</div>
+    </div>
+    ${c.ai ? `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;">AI Triage Assessment</div>
+      <div style="font-size:13px;line-height:1.7;color:rgba(255,255,255,.75);">${c.ai}</div>
+    </div>` : ''}
+    ${c.history ? `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;">Medical History & Allergies</div>
+      <div style="font-size:13px;line-height:1.7;color:rgba(255,255,255,.75);">${c.history}<br><br>Allergies: ${c.allergies||'—'}</div>
+    </div>` : ''}
+    ${c.insurance ? `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;">Insurance & Contact</div>
+      <div style="font-size:13px;line-height:1.7;color:rgba(255,255,255,.75);">${c.insurance}<br>${c.family||''}</div>
+    </div>` : ''}`;
+
+  // Store doc id for PDF download
+  document.getElementById('review-overlay').dataset.docId = id;
+  document.getElementById('review-overlay').classList.remove('hidden');
+}
+
+
+/* ─── ANALYTICS ─── */
+let analyticsRendered = false;
+function renderAnalytics() {
+  if (analyticsRendered) return;
+  analyticsRendered = true;
+  const vals = [120,145,98,167,189,203,141,178,220,187,162,145,198,210,177,190,221,205,184,211,198,187];
+  const max = Math.max(...vals);
+  const labels = ['M','T','W','T','F','S','S','M','T','W','T','F','S','S','M','T','W','T','F','S','S','T'];
+  document.getElementById('bar-chart').innerHTML = vals.map((v,i) => `
+    <div class="bar-col">
+      <div class="bar-fill" style="height:${(v/max)*72}px;background:${i===vals.length-1?'var(--accent)':'rgba(26,111,255,.4)'}"></div>
+      <span class="bar-lbl">${labels[i]}</span>
+    </div>`).join('');
+}
+
+/* ─── DEPARTMENTS ─── */
+let deptsRendered = false;
+function renderDepts() {
+  if (deptsRendered) return;
+  deptsRendered = true;
+  document.getElementById('dept-cards').innerHTML = DEPTS.map(d => `
+    <div class="dept-card" onclick="showToast('Opening ${d.name} department…')">
+      <div class="dept-icon">${d.icon}</div>
+      <div class="dept-name">${d.name}</div>
+      <div class="dept-head">Head: ${d.head}</div>
+      <div class="dept-stats">
+        <div class="ds-item"><div class="ds-val" style="color:${d.active>0?'var(--accent)':'rgba(255,255,255,.35)'}">${d.active}</div><div class="ds-lbl">Active Calls</div></div>
+        <div class="ds-item"><div class="ds-val">${d.today}</div><div class="ds-lbl">Today</div></div>
+        <div class="ds-item"><div class="ds-val" style="font-size:13px">${d.avg}</div><div class="ds-lbl">Avg Time</div></div>
+        <div class="ds-item"><div class="ds-val"><span style="font-size:11px;color:${d.status==='ok'?'var(--t3)':'var(--t2)'}">● ${d.status==='ok'?'Normal':'Busy'}</span></div><div class="ds-lbl">Status</div></div>
+      </div>
+    </div>`).join('');
+}
+
+/* ─── STAFF ─── */
+let staffRendered = false;
+function renderStaff() {
+  if (staffRendered) return;
+  staffRendered = true;
+  const sc = {'on-duty':'var(--t3)','on-call':'var(--t2)','off-duty':'var(--text3)'};
+  document.getElementById('staff-cards').innerHTML = STAFF.map(s => `
+    <div class="staff-card" onclick="showToast('Viewing profile: ${s.name}')">
+      <div class="staff-av" style="background:${s.bg}">${s.initials}</div>
+      <div class="staff-name">${s.name}</div>
+      <div class="staff-role">${s.role}</div>
+      <div class="staff-dept-tag">${s.dept}</div>
+      <div class="staff-status"><span style="width:6px;height:6px;border-radius:50%;background:${sc[s.status]};display:inline-block"></span>${s.status.replace('-',' ')}</div>
+    </div>`).join('');
+}
+
+/* ─── SETTINGS ─── */
+function openSettings() { document.getElementById('settings-overlay').classList.remove('hidden'); }
+function closeSettings() { document.getElementById('settings-overlay').classList.add('hidden'); }
+function saveSettings() { closeSettings(); showToast('✓ Settings saved'); }
+
+/* ─── MODALS ─── */
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+function closeModalOutside(e, id) { if (e.target === document.getElementById(id)) closeModal(id); }
+
+/* ─── TOAST ─── */
+function showToast(msg, isAlert = false) {
+  const t = document.getElementById('toast');
+  t.className = 'toast' + (isAlert ? ' t1-toast' : '');
+  t.innerHTML = (isAlert?'<span style="color:var(--t1)">⚠</span> ':'<span style="color:var(--accent)">✓</span> ') + msg;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.add('hidden'), 3500);
+}
+
+/* ─── GLOBAL SEARCH ─── */
+function globalSearch(q) {
+  if (!q.trim()) { setMode('board'); return; }
+  // Search across calls and patients
+  const callMatch = CALLS.filter(c => c.name.toLowerCase().includes(q.toLowerCase()) || c.mrn.toLowerCase().includes(q.toLowerCase()));
+  if (callMatch.length > 0 && currentMode === 'board') {
+    renderBoard('all');
+    callMatch.forEach(c => {
+      const el = document.querySelector(`[data-id="${c.id}"]`);
+      if (el) el.style.outline = '1px solid var(--accent)';
+    });
+  }
+}
+
+/* ─── SIMULATE NEW CALL ─── */
+function simulateNewCall() {
+  simCallId++;
+  const names = ['Jennifer Walsh, 42','Robert Kim, 67','Sofia Hernandez, 29','Ahmad Patel, 55'];
+  const issues = ['Chest tightness and shortness of breath','Severe headache onset 2hrs ago, visual changes','Abdominal pain radiating to back, nausea','High fever 103°F, productive cough 5 days'];
+  const depts = ['Cardiology','Neurology','Emergency','Primary Care'];
+  const triage = ['t1','t2','t2','t3'];
+  const idx = Math.floor(Math.random() * names.length);
+  const now = new Date();
+  const ts = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+
+  // Show processing indicator first
+  const board = document.getElementById('call-board');
+  const procId = 'proc-' + simCallId;
+  const procHtml = `<div class="processing-row" id="${procId}">
+    <div class="proc-spinner"></div>
+    <div class="proc-text">Incoming call — processing patient intake…</div>
+    <div class="proc-steps">
+      <span class="proc-step active" id="${procId}-s1">Speech-to-text</span>
+      <span class="proc-step" id="${procId}-s2">EHR lookup</span>
+      <span class="proc-step" id="${procId}-s3">AI triage</span>
+      <span class="proc-step" id="${procId}-s4">Routing</span>
+    </div>
+  </div>`;
+  board.insertAdjacentHTML('afterbegin', procHtml);
+
+  // Animate processing steps
+  const steps = ['s1','s2','s3','s4'];
+  steps.forEach((s, i) => {
+    setTimeout(() => {
+      const prev = document.getElementById(`${procId}-${steps[i-1]}`);
+      if (prev) prev.className = 'proc-step done';
+      const el = document.getElementById(`${procId}-${s}`);
+      if (el) el.className = 'proc-step active';
+    }, i * 600);
+  });
+
+  setTimeout(() => {
+    const proc = document.getElementById(procId);
+    if (proc) proc.remove();
+    const nameParts = names[idx].split(', ');
+    const newCall = {
+      id: simCallId,
+      name: nameParts[0],
+      age: parseInt(nameParts[1]),
+      gender: 'F',
+      mrn: 'MRN-0' + simCallId,
+      dept: depts[idx],
+      triage: triage[idx],
+      status: 'active',
+      dur: '0m 00s',
+      ts: ts,
+      issue: issues[idx],
+      ai: 'AI assessment in progress. Routing to ' + depts[idx] + '.',
+      vitals:[['Status','Incoming',''],['Time',ts,''],['Triage',triage[idx].toUpperCase(),''],['Source','Call','']],
+      history: 'EHR data being retrieved…',
+      allergies: 'Checking records…',
+      insurance: 'Verification in progress…',
+      family: 'Extracting from call…'
+    };
+    CALLS.unshift(newCall);
+    renderBoard();
+    // Flash new card
+    const card = document.querySelector(`[data-id="${simCallId}"]`);
+    if (card) { card.classList.add('new-call'); setTimeout(()=>card.classList.remove('new-call'),2000); }
+    // Update KPIs
+    const kpiEl = document.getElementById('kpi-active');
+    if (kpiEl) kpiEl.textContent = parseInt(kpiEl.textContent)+1;
+    showToast('New call received — ' + names[idx]);
+  }, steps.length * 600 + 400);
+}
+
+/* ─── LIVE TICKER ─── */
+setInterval(() => {
+  if (Math.random() > .7) {
+    const el = document.getElementById('kpi-active');
+    const badge = document.getElementById('nav-badge');
+    const cur = parseInt(el?.textContent||14);
+    const next = Math.max(10, Math.min(22, cur + (Math.random()>.5?1:-1)));
+    if (el) el.textContent = next;
+    if (badge) badge.textContent = next;
+  }
+}, 5000);
+
+/* ─── PDF ENGINE ─── */
+function loadJsPDF(cb) {
+  if (window.jspdf) { cb(); return; }
+  const s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  s.onload = cb;
+  document.head.appendChild(s);
+}
+
+function downloadPDF() {
+  const c = CALLS.find(x => x.id === selectedCallId);
+  if (!c) { showToast('Select a patient first'); return; }
+  showToast('Generating PDF…');
+  loadJsPDF(() => buildClinicalPDF(c));
+}
+
+function downloadDocPDF(docId) {
+  const d = DOCS.find(x => x.id === docId);
+  const call = CALLS.find(x => x.name === d.patient);
+  if (call) { showToast('Generating PDF…'); loadJsPDF(() => buildClinicalPDF(call)); return; }
+  showToast('Generating summary PDF…');
+  loadJsPDF(() => buildDocPDF(d));
+}
+
+function buildClinicalPDF(c) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const W = 210, M = 18, cW = W - M * 2;
+  let y = 0;
+  const now = new Date();
+  const hosp = document.getElementById('top-hospital').textContent + ' Hospital';
+  const strip = s => s.replace(/<[^>]+>/g, '');
+
+  // Triage colors
+  const TC = { t1: [220, 38, 38], t2: [194, 97, 0], t3: [21, 128, 61] };
+  const TL = { t1: 'T1  CRITICAL', t2: 'T2  URGENT', t3: 'T3  ROUTINE' };
+  const TBG = { t1: [255, 243, 243], t2: [255, 249, 235], t3: [240, 255, 246] };
+  const [tR, tG, tB] = TC[c.triage];
+  const [bgR, bgG, bgB] = TBG[c.triage];
+
+  // ── Helpers ──
+  const sf = (st, sz, r = 25, g = 30, b = 45) => {
+    doc.setFont('helvetica', st); doc.setFontSize(sz); doc.setTextColor(r, g, b);
+  };
+  const fb = (x, y, w, h, R, G, B) => { doc.setFillColor(R, G, B); doc.rect(x, y, w, h, 'F'); };
+  const fbr = (x, y, w, h, R, G, B, rd = 2) => { doc.setFillColor(R, G, B); doc.roundedRect(x, y, w, h, rd, rd, 'F'); };
+  const stroke = (x, y, w, h, R, G, B, lw = 0.3, rd = 2) => {
+    doc.setDrawColor(R, G, B); doc.setLineWidth(lw); doc.roundedRect(x, y, w, h, rd, rd, 'S');
+  };
+  const wrap = (txt, x, sy, mW, lh = 6.5) => {
+    const lines = doc.splitTextToSize(String(txt), mW);
+    lines.forEach((l, i) => doc.text(l, x, sy + i * lh));
+    return sy + lines.length * lh;
+  };
+  const sec = (title, r, g, b) => {
+    fb(M, y, 4, 7, r, g, b);
+    sf('bold', 10, r, g, b); doc.text(title, M + 7, y + 5.5);
+    y += 11;
+    doc.setDrawColor(r, g, b); doc.setLineWidth(0.15); doc.line(M, y, W - M, y);
+    y += 5;
+  };
+  const contHdr = () => {
+    fb(0, 0, W, 10, 26, 111, 255); fb(0, 8, W, 2, 16, 80, 200);
+    sf('bold', 8, 255, 255, 255); doc.text('Vela. — AI Clinical Summary', M, 7);
+    sf('normal', 7, 200, 220, 255); doc.text(`${c.name}  ·  ${c.mrn}  (continued)`, W - M, 7, { align: 'right' });
+    y = 17;
+  };
+  const pageCheck = (needed = 30) => { if (y + needed > 278) { doc.addPage(); contHdr(); } };
+
+  // ══ HEADER BAND ══
+  fb(0, 0, W, 52, 26, 111, 255);
+  fb(0, 44, W, 8, 16, 80, 200);
+  // Subtle diagonal shimmer
+  doc.setFillColor(255, 255, 255); doc.setGState ? null : null;
+  doc.setDrawColor(255, 255, 255, 0.06);
+  sf('bold', 28, 255, 255, 255); doc.text('Vela.', M, 20);
+  sf('normal', 9, 180, 215, 255); doc.text('Hospital Intelligence Platform', M, 28);
+  sf('bold', 7, 200, 225, 255); doc.text('AI CLINICAL SUMMARY  ·  CONFIDENTIAL  ·  HIPAA PROTECTED', M, 35);
+  sf('bold', 11, 255, 255, 255); doc.text(hosp, W - M, 18, { align: 'right' });
+  sf('normal', 8, 180, 215, 255); doc.text(
+    `${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}  ·  ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`,
+    W - M, 26, { align: 'right' }
+  );
+  y = 60;
+
+  // ══ PATIENT IDENTITY CARD ══
+  fbr(M, y, cW, 30, 245, 248, 255, 3);
+  stroke(M, y, cW, 30, 205, 218, 240, 0.5, 3);
+  fb(M, y, 5, 30, tR, tG, tB); // colored left stripe
+  sf('bold', 18, 20, 28, 60); doc.text(c.name, M + 11, y + 11);
+  sf('normal', 9, 75, 90, 125); doc.text(`${c.age} yrs  ·  ${c.gender === 'M' ? 'Male' : 'Female'}  ·  ${c.mrn}`, M + 11, y + 19);
+  // Triage pill (right side)
+  fbr(W - M - 40, y + 7, 38, 16, tR, tG, tB, 3);
+  sf('bold', 8, 255, 255, 255); doc.text(TL[c.triage], W - M - 21, y + 16.5, { align: 'center' });
+  y += 38;
+
+  // ══ ROUTING BANNER ══
+  fbr(M, y, cW, 13, 235, 242, 255, 2);
+  stroke(M, y, cW, 13, 180, 210, 255, 0.4, 2);
+  fb(M, y, 5, 13, tR, tG, tB);
+  sf('bold', 11, 0, 58, 190); doc.text(`→  ${c.dept}`, M + 9, y + 9.5);
+  sf('normal', 8, 100, 130, 180); doc.text(`Routed at ${c.ts}  ·  Duration on call: ${c.dur}`, W - M, y + 9.5, { align: 'right' });
+  y += 20;
+
+  // ══ PRESENTING ISSUE ══
+  sec('PRESENTING ISSUE', 40, 55, 200);
+  sf('normal', 10.5, 30, 36, 58); y = wrap(c.issue, M, y, cW, 6.8) + 9;
+
+  // ══ AI TRIAGE ASSESSMENT ══
+  pageCheck(35);
+  fbr(M, y, cW, 10, bgR, bgG, bgB, 2);
+  stroke(M, y, cW, 10, tR, tG, tB, 0.4, 2);
+  fb(M, y, 5, 10, tR, tG, tB);
+  sf('bold', 9, tR, tG, tB); doc.text('AI TRIAGE ASSESSMENT', M + 8, y + 7);
+  y += 14;
+  sf('normal', 10.5, 30, 36, 58); y = wrap(strip(c.ai), M, y, cW, 6.8) + 10;
+
+  // ══ VITALS ══
+  pageCheck(32);
+  sec('VITALS & KEY DATA', 70, 80, 195);
+  const vW = cW / 4;
+  c.vitals.forEach(([lbl, val, cls], i) => {
+    const x = M + i * vW;
+    fbr(x, y, vW - 2, 22, 246, 248, 254, 2);
+    stroke(x, y, vW - 2, 22, 210, 218, 238, 0.25, 2);
+    fb(x, y, vW - 2, 3.5, tR, tG, tB); // colored top bar
+    sf('bold', 7, 95, 108, 145); doc.text(lbl.toUpperCase(), x + 4, y + 10);
+    const vc = cls === 'urgent' ? [195, 22, 22] : cls === 'warn' ? [170, 85, 0] : [22, 34, 65];
+    sf('bold', 13, ...vc); doc.text(val, x + 4, y + 19);
+  });
+  y += 30;
+
+  // ══ MEDICAL HISTORY ══
+  pageCheck(28);
+  sec('MEDICAL HISTORY', 170, 28, 28);
+  sf('normal', 10.5, 30, 36, 58); y = wrap(c.history, M, y, cW, 6.8) + 10;
+
+  // ══ ALLERGIES ══
+  pageCheck(28);
+  const allergyText = strip(c.allergies);
+  const hasSevere = allergyText.toLowerCase().includes('anaphylaxis') || allergyText.toLowerCase().includes('severe');
+  if (hasSevere) {
+    fbr(M, y, cW, 10, 255, 242, 242, 2);
+    stroke(M, y, cW, 10, 220, 38, 38, 0.45, 2);
+    fb(M, y, 5, 10, 220, 38, 38);
+    sf('bold', 9, 195, 22, 22); doc.text('⚠  ALLERGIES — SEVERE RISK', M + 8, y + 7);
+    y += 14;
+    sf('bold', 10.5, 195, 22, 22); y = wrap(allergyText, M, y, cW, 6.8) + 10;
+  } else {
+    sec('ALLERGIES', 120, 40, 40);
+    sf('normal', 10.5, 30, 36, 58); y = wrap(allergyText || 'None on file', M, y, cW, 6.8) + 10;
+  }
+
+  // ══ INSURANCE ══
+  pageCheck(24);
+  sec('INSURANCE & COVERAGE', 0, 105, 165);
+  sf('normal', 10.5, 30, 36, 58); y = wrap(c.insurance, M, y, cW, 6.8) + 10;
+
+  // ══ FAMILY / EMERGENCY CONTACT ══
+  pageCheck(24);
+  sec('FAMILY & EMERGENCY CONTACT', 45, 125, 55);
+  sf('normal', 10.5, 30, 36, 58); y = wrap(c.family, M, y, cW, 6.8) + 10;
+
+  // ══ PHYSICIAN NOTES ══
+  pageCheck(40);
+  sec('PHYSICIAN NOTES / ACTIONS', 95, 95, 115);
+  for (let i = 0; i < 4; i++) {
+    doc.setDrawColor(200, 208, 228); doc.setLineWidth(0.22);
+    doc.line(M, y, W - M, y); y += 9;
+  }
+  y += 4;
+
+  // ══ FOOTER ALL PAGES ══
+  const pages = doc.getNumberOfPages();
+  for (let p = 1; p <= pages; p++) {
+    doc.setPage(p);
+    fb(0, 286, W, 11, 26, 111, 255);
+    fb(0, 286, W, 1.5, 16, 80, 200);
+    sf('normal', 7, 180, 215, 255);
+    doc.text('Vela Hospital Intelligence  ·  Confidential AI Clinical Document  ·  HIPAA Protected', W / 2, 292.5, { align: 'center' });
+    doc.text(`Page ${p} / ${pages}`, W - M, 292.5, { align: 'right' });
+    doc.text(hosp, M, 292.5);
+  }
+
+  doc.save(`Vela_${c.name.replace(/ /g, '_')}_${c.mrn}_ClinicalSummary.pdf`);
+  showToast(`✓ Downloaded: ${c.name} — Clinical Summary`);
+}
+
+function buildDocPDF(d) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const W = 210, M = 18, cW = W - M * 2;
+  let y = 0;
+  const now = new Date();
+  const hosp = document.getElementById('top-hospital').textContent + ' Hospital';
+  const TC = { t1: [220, 38, 38], t2: [194, 97, 0], t3: [21, 128, 61] };
+  const TL = { t1: 'T1  CRITICAL', t2: 'T2  URGENT', t3: 'T3  ROUTINE' };
+  const [tR, tG, tB] = TC[d.triage];
+  const sf = (st, sz, r = 25, g = 30, b = 45) => { doc.setFont('helvetica', st); doc.setFontSize(sz); doc.setTextColor(r, g, b); };
+  const fb = (x, y, w, h, R, G, B) => { doc.setFillColor(R, G, B); doc.rect(x, y, w, h, 'F'); };
+  const fbr = (x, y, w, h, R, G, B, rd = 2) => { doc.setFillColor(R, G, B); doc.roundedRect(x, y, w, h, rd, rd, 'F'); };
+  const wrap = (txt, x, sy, mW, lh = 6.5) => { const ls = doc.splitTextToSize(String(txt), mW); ls.forEach((l, i) => doc.text(l, x, sy + i * lh)); return sy + ls.length * lh; };
+
+  fb(0, 0, W, 52, tR, tG, tB);
+  fb(0, 44, W, 8, Math.max(0, tR - 30), Math.max(0, tG - 30), Math.max(0, tB - 25));
+  sf('bold', 28, 255, 255, 255); doc.text('Vela.', M, 20);
+  sf('normal', 9, 230, 240, 235); doc.text('AI Clinical Summary', M, 28);
+  sf('bold', 11, 255, 255, 255); doc.text(d.patient, W - M, 18, { align: 'right' });
+  sf('normal', 8, 220, 235, 228); doc.text(`${d.mrn}  ·  ${d.time}`, W - M, 26, { align: 'right' });
+  y = 60;
+
+  fbr(M, y, cW, 26, 245, 248, 255, 3);
+  doc.setDrawColor(205, 215, 238); doc.setLineWidth(0.4); doc.roundedRect(M, y, cW, 26, 3, 3, 'S');
+  fb(M, y, 5, 26, tR, tG, tB);
+  sf('bold', 16, 20, 28, 58); doc.text(`${d.patient}, ${d.age}`, M + 11, y + 11);
+  sf('normal', 9, 80, 95, 125); doc.text(d.dept, M + 11, y + 19);
+  fbr(W - M - 40, y + 5, 38, 15, tR, tG, tB, 3);
+  sf('bold', 8, 255, 255, 255); doc.text(TL[d.triage], W - M - 21, y + 13.5, { align: 'center' });
+  y += 34;
+
+  doc.setFillColor(tR, tG, tB); doc.rect(M, y, 5, 7, 'F');
+  sf('bold', 10, tR, tG, tB); doc.text('AI CLINICAL SUMMARY', M + 8, y + 5.5);
+  y += 11;
+  doc.setDrawColor(tR, tG, tB); doc.setLineWidth(0.15); doc.line(M, y, W - M, y); y += 6;
+  sf('normal', 11, 30, 36, 58); y = wrap(d.summary, M, y, cW, 7) + 10;
+
+  doc.setFillColor(26, 111, 255); doc.rect(M, y, 5, 7, 'F');
+  sf('bold', 9, 26, 111, 255); doc.text('DEPARTMENT & TAGS', M + 8, y + 5.5);
+  y += 11;
+  doc.setDrawColor(180, 210, 255); doc.setLineWidth(0.15); doc.line(M, y, W - M, y); y += 6;
+  sf('normal', 10, 30, 36, 58); doc.text(d.dept, M, y); y += 10;
+
+  fb(0, 286, W, 11, 26, 111, 255); fb(0, 286, W, 1.5, 16, 80, 200);
+  sf('normal', 7, 180, 215, 255);
+  doc.text('Vela Hospital Intelligence  ·  AI Clinical Summary  ·  HIPAA Protected', W / 2, 292.5, { align: 'center' });
+  doc.save(`Vela_${d.patient.replace(/ /g, '_')}_Summary.pdf`);
+  showToast(`✓ Downloaded: ${d.patient} Summary`);
+}
+
+
+/* ─── ADD PATIENT ─── */
+let addPatientCurrentStep = 1;
+
+function openAddPatient() {
+  addPatientCurrentStep = 1;
+  // Reset all fields
+  ['apt-fname','apt-lname','apt-phone','apt-emergency','apt-conditions','apt-meds','apt-allergies','apt-ins','apt-insid','apt-grp','apt-ded','apt-copay','apt-pcp'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  ['apt-dob','apt-gender','apt-blood'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('addpt-preview').style.display = 'none';
+  showAddPatientStep(1);
+  document.getElementById('addpt-overlay').classList.remove('hidden');
+}
+
+function showAddPatientStep(step) {
+  [1,2,3].forEach(s => {
+    const el = document.getElementById('addpt-step'+s);
+    if (el) el.style.display = s === step ? 'block' : 'none';
+    const dot = document.getElementById('dot'+s);
+    if (dot) {
+      dot.className = 'addpt-step-dot' + (s < step ? ' done' : s === step ? ' active' : '');
+    }
+  });
+  const backBtn = document.getElementById('addpt-back-btn');
+  const nextBtn = document.getElementById('addpt-next-btn');
+  if (backBtn) backBtn.style.display = step > 1 ? 'inline-flex' : 'none';
+  if (nextBtn) nextBtn.textContent = step === 3 ? '✓ Add Patient' : 'Next →';
+}
+
+function addPatientStep(dir) {
+  if (dir === 'next') {
+    // Validate current step
+    if (addPatientCurrentStep === 1) {
+      const fname = document.getElementById('apt-fname').value.trim();
+      const lname = document.getElementById('apt-lname').value.trim();
+      const dob = document.getElementById('apt-dob').value;
+      const gender = document.getElementById('apt-gender').value;
+      if (!fname || !lname) {
+        document.getElementById('apt-fname').style.borderColor = !fname ? 'var(--t1)' : '';
+        document.getElementById('apt-lname').style.borderColor = !lname ? 'var(--t1)' : '';
+        showToast('Please enter first and last name');
+        return;
+      }
+      if (!dob) { document.getElementById('apt-dob').style.borderColor = 'var(--t1)'; showToast('Please enter date of birth'); return; }
+      if (!gender) { document.getElementById('apt-gender').style.borderColor = 'var(--t1)'; showToast('Please select gender'); return; }
+      // Reset error styles
+      ['apt-fname','apt-lname','apt-dob','apt-gender'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.style.borderColor = '';
+      });
+      addPatientCurrentStep = 2;
+    } else if (addPatientCurrentStep === 2) {
+      const conditions = document.getElementById('apt-conditions').value.trim();
+      if (!conditions) { document.getElementById('apt-conditions').style.borderColor = 'var(--t1)'; showToast('Please enter at least one condition'); return; }
+      document.getElementById('apt-conditions').style.borderColor = '';
+      addPatientCurrentStep = 3;
+      // Show preview
+      buildPreview();
+    } else if (addPatientCurrentStep === 3) {
+      const ins = document.getElementById('apt-ins').value.trim();
+      if (!ins) { document.getElementById('apt-ins').style.borderColor = 'var(--t1)'; showToast('Please enter insurance carrier'); return; }
+      document.getElementById('apt-ins').style.borderColor = '';
+      submitNewPatient();
+      return;
+    }
+    showAddPatientStep(addPatientCurrentStep);
+  } else {
+    addPatientCurrentStep = Math.max(1, addPatientCurrentStep - 1);
+    showAddPatientStep(addPatientCurrentStep);
+  }
+}
+
+function buildPreview() {
+  const fname = document.getElementById('apt-fname').value.trim();
+  const lname = document.getElementById('apt-lname').value.trim();
+  const dob = document.getElementById('apt-dob').value;
+  const dobFormatted = dob ? new Date(dob + 'T00:00:00').toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'}) : '—';
+  const conditions = document.getElementById('apt-conditions').value.trim();
+  const allergies = document.getElementById('apt-allergies').value.trim() || 'None on file';
+
+  document.getElementById('addpt-preview').style.display = 'block';
+  document.getElementById('addpt-preview-body').innerHTML = `
+    <strong style="color:#fff">${fname} ${lname}</strong><br>
+    DOB: ${dobFormatted} · ${document.getElementById('apt-gender').value}<br>
+    Conditions: ${conditions}<br>
+    Allergies: ${allergies}`;
+}
+
+function submitNewPatient() {
+  const fname = document.getElementById('apt-fname').value.trim();
+  const lname = document.getElementById('apt-lname').value.trim();
+  const dob = document.getElementById('apt-dob').value;
+  const dobFormatted = dob ? new Date(dob + 'T00:00:00').toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'}) : '—';
+  const gender = document.getElementById('apt-gender').value;
+  const phone = document.getElementById('apt-phone').value.trim() || '—';
+  const blood = document.getElementById('apt-blood').value || 'Unknown';
+  const emergency = document.getElementById('apt-emergency').value.trim() || '—';
+  const conditions = document.getElementById('apt-conditions').value.trim();
+  const meds = document.getElementById('apt-meds').value.trim() || 'None';
+  const allergies = document.getElementById('apt-allergies').value.trim() || 'None on file';
+  const ins = document.getElementById('apt-ins').value.trim();
+  const insId = document.getElementById('apt-insid').value.trim();
+  const grp = document.getElementById('apt-grp').value.trim() || 'N/A';
+  const ded = document.getElementById('apt-ded').value.trim() || '—';
+  const copay = document.getElementById('apt-copay').value.trim() || '—';
+  const isSevere = allergies.toLowerCase().includes('anaphylaxis') || allergies.toLowerCase().includes('severe');
+
+  // Build MRN
+  const mrn = 'MRN-' + String(Math.floor(Math.random() * 90000) + 10000);
+  const today = new Date().toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'});
+
+  // Calculate age from DOB
+  const birthDate = new Date(dob + 'T00:00:00');
+  const ageYrs = Math.floor((new Date() - birthDate) / (365.25 * 24 * 60 * 60 * 1000));
+
+  const newPatient = {
+    name: fname + ' ' + lname,
+    mrn,
+    age: ageYrs,
+    dob: dobFormatted,
+    gender,
+    phone,
+    blood,
+    conditions,
+    meds,
+    allergies,
+    last: today,
+    insurance: ins,
+    insDetail: `Member #${insId || '—'} · Group ${grp} · Deductible ${ded} · Copay ${copay}`,
+    allergy: isSevere || allergies.toLowerCase() !== 'none on file',
+    emergency,
+    visits: [{date: today, dept: 'Registration', note: 'New patient registered via Vela portal.', doc: 'Admin'}]
+  };
+
+  PATIENTS.unshift(newPatient);
+  closeModal('addpt-overlay');
+  renderPatients();
+  // Auto-select the new patient
+  setTimeout(() => {
+    const firstRow = document.querySelector('#pt-tbody tr');
+    if (firstRow) { selectPatient(0, firstRow); firstRow.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+  }, 100);
+  showToast(`✓ Patient added: ${fname} ${lname} (${mrn})`);
+}
+
+
+function selectHospital(name, code) {
+  document.getElementById('ls-hospital').value = code;
+  document.querySelectorAll('.ls-hosp').forEach(el => { el.style.background=''; el.style.borderColor=''; });
+  event.currentTarget.style.background = 'rgba(26,111,255,.12)';
+  event.currentTarget.style.borderColor = 'rgba(26,111,255,.45)';
+}
+function doLogin() {
+  const email = document.getElementById('ls-email').value.trim();
+  const pwd = document.getElementById('ls-password').value;
+  const sel = document.getElementById('ls-hospital');
+  const hospName = sel.options[sel.selectedIndex].text;
+  if (!email) { document.getElementById('ls-email').style.borderColor='var(--t1)'; document.getElementById('ls-email').focus(); return; }
+  if (!pwd) { document.getElementById('ls-password').style.borderColor='var(--t1)'; document.getElementById('ls-password').focus(); return; }
+  runLoginAnimation(hospName, '👨‍⚕️ Physician', ['Verifying credentials…','Loading hospital portal…','Syncing patient database…','Opening command center…'], hospName);
+}
+function startDemo(role) {
+  const sel = document.getElementById('ls-hospital');
+  const hospName = sel.options[sel.selectedIndex].text;
+  const label = role === 'physician' ? '👨‍⚕️ Physician' : '👩‍💼 Admin';
+  runLoginAnimation(hospName, label, ['Loading demo environment…','Populating sample patient data…','Starting live call simulation…','Opening command center…'], hospName);
+}
+function runLoginAnimation(hospName, roleLabel, steps, launchName) {
+  document.getElementById('ls-form').style.display = 'none';
+  document.getElementById('ls-loading').style.display = 'block';
+  document.getElementById('ls-loading-title').textContent = 'Signing in as ' + roleLabel;
+  const stepsEl = document.getElementById('ls-steps');
+  stepsEl.innerHTML = steps.map((s,i) => `<div id="lstep-${i}" style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:6px;opacity:.4;transition:all .3s;"><span id="lstep-icon-${i}" style="font-family:'DM Mono',monospace;font-size:12px;color:rgba(255,255,255,.3)">○</span><span style="font-size:12px;color:rgba(255,255,255,.55)">${s}</span></div>`).join('');
+  steps.forEach((s,i) => {
+    setTimeout(() => {
+      document.getElementById('ls-loading-step').textContent = s;
+      const row = document.getElementById('lstep-'+i);
+      const icon = document.getElementById('lstep-icon-'+i);
+      if(row){row.style.opacity='1';row.style.background='rgba(26,111,255,.08)';row.style.borderColor='rgba(26,111,255,.2)';}
+      if(icon){icon.textContent='●';icon.style.color='#1a6fff';}
+      if(i>0){
+        const prev=document.getElementById('lstep-icon-'+(i-1));
+        if(prev){prev.textContent='✓';prev.style.color='#22c55e';}
+        const prevRow=document.getElementById('lstep-'+(i-1));
+        if(prevRow){prevRow.style.background='rgba(34,197,94,.06)';prevRow.style.borderColor='rgba(34,197,94,.2)';}
+      }
+      if(i===steps.length-1){
+        setTimeout(()=>{
+          const last=document.getElementById('lstep-icon-'+i);
+          if(last){last.textContent='✓';last.style.color='#22c55e';}
+          setTimeout(()=>launchPortal(launchName),500);
+        },500);
+      }
+    }, i*700);
+  });
+}
+function launchPortal(hospitalName) {
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('top-hospital').textContent = hospitalName.replace(' Hospital','').replace(' Medical Center','').replace(' Health','');
+  renderBoard();
+}
+
+
+/* ─── INIT ─── */
+renderBoard();
+</script>
+</body>
+</html>
