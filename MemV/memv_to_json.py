@@ -1,33 +1,18 @@
 """
 memv_to_json.py
 ===============
-Queries mem[v]ai for a patient's data and builds ONE structured JSON
-ready for the reasoning model.
-
-This is the READ side of the system.
+Looks up patient by phone number using local index,
+then queries mem[v]ai by name for all semantic memories,
+and builds ONE clean JSON for the reasoning model.
 
 Flow:
-  Patient name/phone → query mem[v]ai → build JSON → reasoning model
-
-JSON structure:
-  {
-    "patient_id":   "...",
-    "created_at":   "...",
-    "identity": {
-      "name":     "...",
-      "phone":    "...",
-      "location": "..."
-    },
-    "health_info": {
-      "primary_complaint": "...",
-      "retrieved_memories": [ "...", "..." ]
-    },
-    "summary": null   ← reasoning model fills this in
-  }
+  phone → phone_index.json (exact lookup) → name
+        → mem[v]ai search by name (semantic) → facts
+        → build JSON → reasoning model
 
 Usage:
-  python memv_to_json.py --name "Jane Smith"
-  python memv_to_json.py --name "Jane Smith" --output jane_smith.json
+  python memv_to_json.py --phone "555-0101"
+  python memv_to_json.py --phone "555-0101" --output jane.json
   python memv_to_json.py --demo
 """
 
@@ -44,29 +29,53 @@ sys.argv = _argv
 
 API_KEY    = "memv_1e1398f523a2e4e4583829387bea87b545c6e0b90cc255ab"
 SPACE_NAME = "hospital_patient_intake"
-TOP_K      = 10  # pull enough memories to cover all fields
+INDEX_FILE = "phone_index.json"
+TOP_K      = 15
 
 
 # ─────────────────────────────────────────────
-# HELPERS
+# SPACE
 # ─────────────────────────────────────────────
 
 def get_space_id(client):
-    """Find the hospital intake space."""
     spaces = client.spaces.list()
     for space in spaces.spaces:
         if space.name == SPACE_NAME:
             return space.id
-    raise ValueError(
-        f"Space '{SPACE_NAME}' not found. Run memv_core.py first."
-    )
+    raise ValueError(f"Space '{SPACE_NAME}' not found. Run memv_core.py first.")
 
 
-def query_patient(client, space_id, name):
-    """
-    Pull all memories related to this patient from mem[v]ai.
-    Returns a flat list of fact strings.
-    """
+# ─────────────────────────────────────────────
+# PHONE INDEX — exact lookup
+# ─────────────────────────────────────────────
+
+def load_index():
+    try:
+        with open(INDEX_FILE, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        raise FileNotFoundError(
+            f"'{INDEX_FILE}' not found. Run memv_core.py first to push patients."
+        )
+
+
+def lookup_by_phone(phone, index):
+    """Exact phone → patient record from local index."""
+    entry = index.get(phone)
+    if not entry:
+        raise ValueError(
+            f"Phone {phone} not found in index. "
+            f"Make sure this patient was pushed via memv_core.py."
+        )
+    return entry
+
+
+# ─────────────────────────────────────────────
+# MEMV QUERY
+# ─────────────────────────────────────────────
+
+def query_by_name(client, space_id, name):
+    """Pull all memories for this patient from mem[v]ai by name."""
     results = client.memories.search(
         space_ids=[space_id],
         query=name,
@@ -75,52 +84,63 @@ def query_patient(client, space_id, name):
     return [memory.fact for memory in results.results]
 
 
+# ─────────────────────────────────────────────
+# BUILD JSON
+# ─────────────────────────────────────────────
+
 def extract_field(facts, keywords):
-    """
-    Scan retrieved facts for a specific field by keyword match.
-    Returns the first matching fact string, or None.
-    """
     for fact in facts:
         if any(kw.lower() in fact.lower() for kw in keywords):
             return fact
     return None
 
 
-def build_json(name, facts):
+def build_json(phone, index_entry, facts):
     """
-    From the raw list of retrieved facts, assemble the
-    structured patient JSON for the reasoning model.
+    Assemble the final patient JSON for the reasoning model.
+    Identity comes from the local index (exact).
+    Health info comes from mem[v]ai semantic retrieval.
     """
+    name     = index_entry["name"]
+    location = index_entry["location"]
 
-    # Pull identity fields from retrieved memories
-    phone_fact    = extract_field(facts, ["phone", "number"])
-    location_fact = extract_field(facts, ["located", "location"])
-    issue_fact    = extract_field(facts, ["reporting", "called", "complaint",
-                                          "pain", "issue", "injury"])
+    # Primary complaint from memv.ai facts
+    issue_fact = extract_field(facts, [
+        "reporting", "called", "complaint", "pain", "issue",
+        "injury", "symptoms", "headache", "chest", "dizziness",
+        "difficulty", "fever", "nausea", "bleeding",
+        "shortness", "weakness", "swelling", "rash",
+        "attack", "reaction", "tightness", "bruising",
+        "locking", "laceration", "sprain", "abscess"
+    ])
 
-    # health_info contains everything health-related
+    # All health-related facts
     health_facts = [
         f for f in facts
         if any(kw in f.lower() for kw in [
             "reporting", "called", "pain", "issue", "injury",
             "complaint", "symptom", "health", "condition",
             "headache", "chest", "dizziness", "shortness",
-            "difficulty", "fever", "nausea", "bleeding"
+            "difficulty", "fever", "nausea", "bleeding",
+            "weakness", "swelling", "rash", "attack",
+            "reaction", "tightness", "bruising", "locking",
+            "laceration", "sprain", "abscess", "vision",
+            "hearing", "fatigue", "weight", "urination",
+            "heartbeat", "palpitation", "anxiety", "migraine"
         ])
     ]
 
-    # If no specific health facts found, include all retrieved facts
-    # (memv.ai graph may surface them differently)
+    # Fallback: include all facts if no health keywords matched
     if not health_facts:
         health_facts = facts
 
-    payload = {
-        "patient_id":  str(uuid.uuid4()),
-        "created_at":  datetime.now(timezone.utc).isoformat(),
+    return {
+        "patient_id": index_entry["patient_id"],
+        "created_at": datetime.now(timezone.utc).isoformat(),
         "identity": {
             "name":     name,
-            "phone":    phone_fact,
-            "location": location_fact,
+            "phone":    phone,
+            "location": location,
         },
         "health_info": {
             "primary_complaint":  issue_fact,
@@ -129,26 +149,21 @@ def build_json(name, facts):
         "summary": None   # reasoning model fills this in
     }
 
-    return payload
-
 
 # ─────────────────────────────────────────────
 # MAIN
 # ─────────────────────────────────────────────
 
-DEMO_NAMES = ["Jane Smith", "Robert Chen", "Fatima Al-Hassan"]
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Generate reasoning JSON from mem[v]ai patient data"
     )
-    parser.add_argument("--name",     default=None,
-                        help="Patient name to query (e.g. 'Jane Smith')")
-    parser.add_argument("--output",   default="patient_payload.json",
+    parser.add_argument("--phone",  default=None,
+                        help="Patient phone number (e.g. '555-0101')")
+    parser.add_argument("--output", default="patient_payload.json",
                         help="Output JSON file (default: patient_payload.json)")
-    parser.add_argument("--demo",     action="store_true",
-                        help="Run all demo patients from memv_core.py")
+    parser.add_argument("--demo",   action="store_true",
+                        help="Run first 3 patients from the index")
     args = parser.parse_args()
 
     client = Memv(api_key=API_KEY)
@@ -157,36 +172,46 @@ def main():
     space_id = get_space_id(client)
     print(f"  Space ID: {space_id}")
 
+    index = load_index()
+    print(f"  Phone index loaded — {len(index)} patient(s) registered.")
+
     if args.demo:
-        print(f"\n  Demo mode — generating JSON for {len(DEMO_NAMES)} patients\n")
+        demo_phones = list(index.keys())[:3]
+        print(f"\n  Demo mode — generating JSON for {len(demo_phones)} patients\n")
 
-        for i, name in enumerate(DEMO_NAMES):
-            print(f"  [{i+1}] Querying: {name}")
-            facts   = query_patient(client, space_id, name)
-            payload = build_json(name, facts)
+        for i, phone in enumerate(demo_phones):
+            entry   = lookup_by_phone(phone, index)
+            name    = entry["name"]
+            print(f"  [{i+1}] {name} ({phone})")
 
-            fname = f"patient_{i+1}_{name.replace(' ', '_').lower()}.json"
+            facts   = query_by_name(client, space_id, name)
+            payload = build_json(phone, entry, facts)
+
+            fname = f"patient_{phone.replace('-', '_')}.json"
             with open(fname, "w") as f:
                 json.dump(payload, f, indent=2)
 
-            print(f"       Retrieved {len(facts)} memories")
-            print(f"       Saved → {fname}\n")
+            print(f"       {len(facts)} memories retrieved → {fname}\n")
 
         print("  All payloads generated.")
 
     else:
-        # Single patient query
-        name = args.name
-        if not name:
-            # Default to first demo patient if no name given
-            name = DEMO_NAMES[0]
-            print(f"\n  No --name provided, defaulting to: {name}")
+        phone = args.phone
+        if not phone:
+            # Default to first patient in index
+            phone = list(index.keys())[0]
+            print(f"\n  No --phone provided, defaulting to: {phone}")
 
-        print(f"\n  Querying mem[v]ai for: {name}")
-        facts   = query_patient(client, space_id, name)
-        payload = build_json(name, facts)
+        entry = lookup_by_phone(phone, index)
+        name  = entry["name"]
 
-        print(f"  Retrieved {len(facts)} memories")
+        print(f"\n  Patient: {name} ({phone})")
+        print(f"  Querying mem[v]ai...")
+
+        facts   = query_by_name(client, space_id, name)
+        payload = build_json(phone, entry, facts)
+
+        print(f"  {len(facts)} memories retrieved.")
 
         with open(args.output, "w") as f:
             json.dump(payload, f, indent=2)
