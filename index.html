@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vela — Hospital Command Center</title>
+<title>Mocha — Hospital Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;500;600;700;800&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -391,9 +391,9 @@ button{cursor:pointer;}
 <div id="login-screen">
   <div class="ls-left">
     <div class="ls-left-content">
-      <div class="ls-logo">Vela<span>.</span></div>
+      <div class="ls-logo">Mocha<span>.</span></div>
       <h2 class="ls-h2">Your hospital's<br>private portal.</h2>
-      <p class="ls-sub">Search for your hospital below to access your secure Vela command center.</p>
+      <p class="ls-sub">Search for your hospital below to access your secure Mocha command center.</p>
 
       <!-- Hospital search -->
       <div style="margin-top:32px;position:relative;">
@@ -427,7 +427,7 @@ button{cursor:pointer;}
   <div class="ls-right">
     <div class="ls-box">
       <div class="ls-box-title" id="ls-title">Sign In</div>
-      <div class="ls-box-sub" id="ls-sub">Access your hospital's Vela command center</div>
+      <div class="ls-box-sub" id="ls-sub">Access your hospital's Mocha command center</div>
 
       <!-- Normal sign-in form -->
       <div id="ls-form">
@@ -463,7 +463,7 @@ button{cursor:pointer;}
           <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:rgba(26,111,255,.7);margin-bottom:5px;">Demo Credentials</div>
           <div style="font-size:11px;color:rgba(255,255,255,.45);line-height:1.7;">
             Email: <span style="color:rgba(255,255,255,.7);font-family:'DM Mono',monospace">demo@memorial.org</span><br>
-            Password: <span style="color:rgba(255,255,255,.7);font-family:'DM Mono',monospace">vela2026</span>
+            Password: <span style="color:rgba(255,255,255,.7);font-family:'DM Mono',monospace">mocha2026</span>
           </div>
         </div>
       </div>
@@ -480,7 +480,7 @@ button{cursor:pointer;}
         </div>
       </div>
 
-      <button class="ls-back" onclick="window.location.reload()">← Back to velahealth.io</button>
+      <button class="ls-back" onclick="window.location.reload()">← Back to mochahealth.io</button>
     </div>
   </div>
 </div>
@@ -491,7 +491,7 @@ button{cursor:pointer;}
   <div class="topbar">
     <div class="topbar-logo">
       <div>
-        <div class="logo-mark">Vela<span>.</span></div>
+        <div class="logo-mark">Mocha<span>.</span></div>
         <div class="logo-hospital" id="top-hospital">Memorial General</div>
       </div>
     </div>
@@ -677,7 +677,7 @@ button{cursor:pointer;}
             <div class="an-card"><div class="an-label">Total Calls / Month</div><div class="an-big">3,841</div><div class="an-change up">↑ 14% vs last month</div></div>
             <div class="an-card"><div class="an-label">Staff Hours Saved</div><div class="an-big">248h</div><div class="an-change up">↑ 22% efficiency</div></div>
             <div class="an-card"><div class="an-label">Routing Accuracy</div><div class="an-big">98.2%</div><div class="an-change up">↑ 0.4% from last month</div></div>
-            <div class="an-card"><div class="an-label">Avg Intake Time</div><div class="an-big" style="font-size:28px;padding-top:4px">1m 12s</div><div class="an-change up">↓ 38% vs pre-Vela</div></div>
+            <div class="an-card"><div class="an-label">Avg Intake Time</div><div class="an-big" style="font-size:28px;padding-top:4px">1m 12s</div><div class="an-change up">↓ 38% vs pre-Mocha</div></div>
             <div class="an-card an-two">
               <div class="an-label">Daily Call Volume — March 2026</div>
               <div class="bar-chart" id="bar-chart"></div>
@@ -846,7 +846,7 @@ button{cursor:pointer;}
   <div class="settings-body">
     <div class="settings-section">
       <div class="settings-section-title">AI & Routing</div>
-      <div class="settings-section-desc">Configure how Vela processes and routes calls.</div>
+      <div class="settings-section-desc">Configure how Mocha processes and routes calls.</div>
       <div class="setting-row"><div class="sr-left"><h4>Auto-route T1 Critical Calls</h4><p>Route critical calls immediately without staff confirmation.</p></div><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
       <div class="setting-row"><div class="sr-left"><h4>AI Document Generation</h4><p>Auto-generate clinical summaries for every call.</p></div><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
       <div class="setting-row"><div class="sr-left"><h4>EHR Data Enrichment</h4><p>Pull patient history into new call summaries.</p></div><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
@@ -863,7 +863,7 @@ button{cursor:pointer;}
     </div>
     <div class="settings-section">
       <div class="settings-section-title">Integrations</div>
-      <div class="settings-section-desc">Connect Vela to your hospital systems.</div>
+      <div class="settings-section-desc">Connect Mocha to your hospital systems.</div>
       <div class="setting-row"><div class="sr-left"><h4>Epic EHR</h4><p>Real-time patient record sync.</p></div>
         <div style="display:flex;align-items:center;gap:10px"><span class="conn-badge conn-ok">● Connected</span><button class="btn-sm btn-ghost" onclick="showToast('Epic EHR disconnected')">Disconnect</button></div>
       </div>
@@ -1553,7 +1553,7 @@ function buildPatientPDF(p) {
   // ── HEADER — teal/green theme for patient records ──
   fb(0,0,W,52,15,140,100);
   fb(0,44,W,8,8,105,75);
-  sf('bold',28,255,255,255); doc.text('Vela.',M,20);
+  sf('bold',28,255,255,255); doc.text('Mocha.',M,20);
   sf('normal',9,180,235,215); doc.text('Hospital Intelligence Platform',M,28);
   sf('bold',7,180,235,215); doc.text('PATIENT HEALTH RECORD  ·  CONFIDENTIAL  ·  HIPAA PROTECTED',M,35);
   sf('bold',11,255,255,255); doc.text(hosp,W-M,18,{align:'right'});
@@ -1638,12 +1638,12 @@ function buildPatientPDF(p) {
     doc.setPage(pg);
     fb(0,286,W,11,15,140,100); fb(0,286,W,1.5,8,105,75);
     sf('normal',7,180,235,215);
-    doc.text('Vela Hospital Intelligence  ·  Patient Health Record  ·  HIPAA Protected',W/2,292.5,{align:'center'});
+    doc.text('Mocha Hospital Intelligence  ·  Patient Health Record  ·  HIPAA Protected',W/2,292.5,{align:'center'});
     doc.text(`Page ${pg} / ${pages}`,W-M,292.5,{align:'right'});
     doc.text(hosp,M,292.5);
   }
 
-  doc.save(`Vela_${p.name.replace(/ /g,'_')}_${p.mrn}_HealthRecord.pdf`);
+  doc.save(`Mocha_${p.name.replace(/ /g,'_')}_${p.mrn}_HealthRecord.pdf`);
   showToast(`✓ Downloaded: ${p.name} — Patient Record`);
 }
 
@@ -2069,7 +2069,7 @@ function buildClinicalPDF(c) {
   };
   const contHdr = () => {
     fb(0, 0, W, 10, 26, 111, 255); fb(0, 8, W, 2, 16, 80, 200);
-    sf('bold', 8, 255, 255, 255); doc.text('Vela. — AI Clinical Summary', M, 7);
+    sf('bold', 8, 255, 255, 255); doc.text('Mocha. — AI Clinical Summary', M, 7);
     sf('normal', 7, 200, 220, 255); doc.text(`${c.name}  ·  ${c.mrn}  (continued)`, W - M, 7, { align: 'right' });
     y = 17;
   };
@@ -2081,7 +2081,7 @@ function buildClinicalPDF(c) {
   // Subtle diagonal shimmer
   doc.setFillColor(255, 255, 255); doc.setGState ? null : null;
   doc.setDrawColor(255, 255, 255, 0.06);
-  sf('bold', 28, 255, 255, 255); doc.text('Vela.', M, 20);
+  sf('bold', 28, 255, 255, 255); doc.text('Mocha.', M, 20);
   sf('normal', 9, 180, 215, 255); doc.text('Hospital Intelligence Platform', M, 28);
   sf('bold', 7, 200, 225, 255); doc.text('AI CLINICAL SUMMARY  ·  CONFIDENTIAL  ·  HIPAA PROTECTED', M, 35);
   sf('bold', 11, 255, 255, 255); doc.text(hosp, W - M, 18, { align: 'right' });
@@ -2185,12 +2185,12 @@ function buildClinicalPDF(c) {
     fb(0, 286, W, 11, 26, 111, 255);
     fb(0, 286, W, 1.5, 16, 80, 200);
     sf('normal', 7, 180, 215, 255);
-    doc.text('Vela Hospital Intelligence  ·  Confidential AI Clinical Document  ·  HIPAA Protected', W / 2, 292.5, { align: 'center' });
+    doc.text('Mocha Hospital Intelligence  ·  Confidential AI Clinical Document  ·  HIPAA Protected', W / 2, 292.5, { align: 'center' });
     doc.text(`Page ${p} / ${pages}`, W - M, 292.5, { align: 'right' });
     doc.text(hosp, M, 292.5);
   }
 
-  doc.save(`Vela_${c.name.replace(/ /g, '_')}_${c.mrn}_ClinicalSummary.pdf`);
+  doc.save(`Mocha_${c.name.replace(/ /g, '_')}_${c.mrn}_ClinicalSummary.pdf`);
   showToast(`✓ Downloaded: ${c.name} — Clinical Summary`);
 }
 
@@ -2211,7 +2211,7 @@ function buildDocPDF(d) {
 
   fb(0, 0, W, 52, tR, tG, tB);
   fb(0, 44, W, 8, Math.max(0, tR - 30), Math.max(0, tG - 30), Math.max(0, tB - 25));
-  sf('bold', 28, 255, 255, 255); doc.text('Vela.', M, 20);
+  sf('bold', 28, 255, 255, 255); doc.text('Mocha.', M, 20);
   sf('normal', 9, 230, 240, 235); doc.text('AI Clinical Summary', M, 28);
   sf('bold', 11, 255, 255, 255); doc.text(d.patient, W - M, 18, { align: 'right' });
   sf('normal', 8, 220, 235, 228); doc.text(`${d.mrn}  ·  ${d.time}`, W - M, 26, { align: 'right' });
@@ -2240,8 +2240,8 @@ function buildDocPDF(d) {
 
   fb(0, 286, W, 11, 26, 111, 255); fb(0, 286, W, 1.5, 16, 80, 200);
   sf('normal', 7, 180, 215, 255);
-  doc.text('Vela Hospital Intelligence  ·  AI Clinical Summary  ·  HIPAA Protected', W / 2, 292.5, { align: 'center' });
-  doc.save(`Vela_${d.patient.replace(/ /g, '_')}_Summary.pdf`);
+  doc.text('Mocha Hospital Intelligence  ·  AI Clinical Summary  ·  HIPAA Protected', W / 2, 292.5, { align: 'center' });
+  doc.save(`Mocha_${d.patient.replace(/ /g, '_')}_Summary.pdf`);
   showToast(`✓ Downloaded: ${d.patient} Summary`);
 }
 
@@ -2427,7 +2427,7 @@ function submitNewPatient() {
     insDetail: `Member #${insId || '—'} · Group ${grp} · Deductible ${ded} · Copay ${copay}`,
     allergy: isSevere || allergies.toLowerCase() !== 'none on file',
     emergency,
-    visits: [{date: today, dept: 'Registration', note: 'New patient registered via Vela portal.', doc: 'Admin'}]
+    visits: [{date: today, dept: 'Registration', note: 'New patient registered via Mocha portal.', doc: 'Admin'}]
   };
 
   PATIENTS.unshift(newPatient);
