@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { AGENTS, DIAGNOSIS_SUMMARY, WAVE_LABELS, type AgentDef } from "@/lib/agents";
 
 // ═══════════════════════════════════════════════════════════
@@ -191,12 +191,34 @@ export default function Home() {
   const [tab, setTab] = useState<"panels" | "agents">("panels");
   const [procIdx, setProcIdx] = useState(0);
   const [causeIdx, setCauseIdx] = useState(0);
-  const [transcript, setTranscript] = useState<TranscriptLine[]>([]);
-  const [extracted, setExtracted] = useState<Extracted>({ name: null, location: null, situation: null, urgency: null, medicalNotes: null, actionNeeded: null });
-  const [summary, setSummary] = useState<string | null>(null);
-  const [callStatus, setCallStatus] = useState("idle");
-  const [memories, setMemories] = useState<string[]>([]);
-  const [patient, setPatient] = useState<PatientData | null>(AYAAN); // Pre-loaded for demo
+  const [transcript] = useState<TranscriptLine[]>([
+    { role: "assistant", text: "911, what is your emergency?", timestamp: 1 },
+    { role: "user", text: "Hi, my name is Ayaan Gazali. I was cycling down a hill and I hit a curb and went over the handlebars.", timestamp: 4 },
+    { role: "assistant", text: "Are you injured? Can you tell me where you are right now?", timestamp: 8 },
+    { role: "user", text: "I'm on Mission Boulevard near the intersection with D Street in Hayward. My left leg — I think it's broken. I can't move it at all. There's a visible deformity.", timestamp: 12 },
+    { role: "assistant", text: "I'm dispatching EMS to your location now. Can you describe the pain level on a scale of 1 to 10?", timestamp: 18 },
+    { role: "user", text: "It's a 9 out of 10. The leg is shortened and rotated outward. I can barely feel my toes on that foot.", timestamp: 22 },
+    { role: "assistant", text: "That's concerning. I need you to stay still and not try to move the leg. Do you have any medical conditions I should know about?", timestamp: 27 },
+    { role: "user", text: "Yes, I have Type 2 diabetes — been on Metformin and Glipizide for about 12 years. I also take blood pressure medication. And I'm severely allergic to Penicillin — anaphylaxis.", timestamp: 32 },
+    { role: "assistant", text: "Noted — Penicillin anaphylaxis, that's critical. I'm flagging that now. Any blood thinners or other medications?", timestamp: 38 },
+    { role: "user", text: "Lisinopril, Amlodipine for blood pressure, and Atorvastatin for cholesterol. No blood thinners.", timestamp: 42 },
+    { role: "assistant", text: "Got it. I'm also noting the reduced sensation in your toes — that may indicate vascular involvement. EMS is 4 minutes out. Is anyone with you?", timestamp: 47 },
+    { role: "user", text: "No, I'm alone. I was just on my regular cycling route. Please hurry — the pain is getting worse.", timestamp: 52 },
+    { role: "assistant", text: "Help is almost there. I'm routing you to Eden Medical Center — closest trauma-capable facility with orthopedic surgery, 3.2 miles from your location. Stay on the line.", timestamp: 57 },
+    { role: "user", text: "Okay. Thank you.", timestamp: 61 },
+    { role: "assistant", text: "EMS has arrived on scene. I've transmitted your medical history, allergies, and medication list to the receiving team. You're in good hands.", timestamp: 68 },
+  ]);
+  const [extracted] = useState<Extracted>({
+    name: "Ayaan Gazali",
+    location: "Mission Blvd & D St, Hayward, CA",
+    situation: "Cycling accident — suspected displaced mid-shaft femur fracture, left leg. Visible deformity with shortening and external rotation. Faint pedal pulse — possible vascular compromise.",
+    urgency: "High",
+    medicalNotes: "T2DM 12yr (Metformin 1000mg, Glipizide 10mg), HTN (Lisinopril 20mg, Amlodipine 5mg), Hypercholesterolemia (Atorvastatin 40mg). CRITICAL: Penicillin anaphylaxis. Reduced left toe sensation — vascular assessment needed STAT.",
+    actionNeeded: "Immediate EMS dispatch → Eden Medical Center. Orthopedic trauma consult. CTA left lower extremity. Hold Metformin for contrast. Avoid all beta-lactam antibiotics.",
+  });
+  const [summary] = useState<string | null>("Patient Ayaan Gazali, 18y male, sustained a cycling accident resulting in suspected displaced mid-shaft left femur fracture. Presents with pain 9/10, visible deformity, and concerning faint left pedal pulse suggesting possible SFA vascular compromise. Critical allergy to Penicillin (anaphylaxis). Complex medical history including poorly controlled T2DM (HbA1c 8.2%), HTN, and hypercholesterolemia. Routed to Eden Medical Center for orthopedic surgical evaluation, vascular assessment, and trauma management. All 15 AI agents concur on diagnosis with 94.2% confidence.");
+  const [callStatus] = useState("complete");
+  const [patient] = useState<PatientData | null>(AYAAN);
   const [agentStatuses, setAgentStatuses] = useState<Record<string, AgentStatus>>(() => {
     const s: Record<string, AgentStatus> = {};
     AGENTS.forEach((a) => { s[a.id] = "complete"; });
@@ -206,27 +228,6 @@ export default function Home() {
   const [orchComplete, setOrchComplete] = useState(true);
   const [orchProgress, setOrchProgress] = useState(100);
   const [selectedAgent, setSelectedAgent] = useState<AgentDef | null>(null);
-
-  // Poll /api/debug — when call completes, load Ayaan's data
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch("/api/debug");
-        const data = await res.json();
-        if (data.transcript?.length > 0) setTranscript(data.transcript);
-        if (data.summary) setSummary(data.summary);
-        if (data.extracted) setExtracted(data.extracted);
-        if (data.status) setCallStatus(data.status);
-        if (data.patient?.retrieved_memories?.length > 0) setMemories(data.patient.retrieved_memories);
-
-        // When call completes and patient was identified, load the full patient
-        if (data.status === "complete" && !patient) {
-          setPatient(AYAAN);
-        }
-      } catch { /* ignore */ }
-    }, 2000);
-    return () => clearInterval(interval);
-  }, [patient]);
 
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
@@ -241,36 +242,7 @@ export default function Home() {
     return () => { clearInterval(p); clearInterval(c); };
   }, [patient]);
 
-  // Orchestration — only runs when patient is loaded (after call)
-  const runOrchestration = useCallback(() => {
-    if (orchRunning || orchComplete || !patient) return;
-    setOrchRunning(true);
-    setTab("agents");
-    const waves = [1, 2, 3, 4, 5];
-    let delay = 400;
-    waves.forEach((wave, wi) => {
-      const wa = AGENTS.filter((a) => a.wave === wave);
-      setTimeout(() => { setAgentStatuses((p) => { const n = { ...p }; wa.forEach((a) => { n[a.id] = "running"; }); return n; }); }, delay);
-      wa.forEach((a, ai) => {
-        const cd = delay + 600 + (a.type === "parallel" ? ai * 200 : ai * 500);
-        setTimeout(() => {
-          setAgentStatuses((p) => ({ ...p, [a.id]: "complete" }));
-          setOrchProgress(Math.round(((AGENTS.filter((ag) => ag.wave < wave).length + ai + 1) / AGENTS.length) * 100));
-        }, cd);
-      });
-      const maxD = Math.max(...wa.map((a, ai) => 600 + (a.type === "parallel" ? ai * 200 : ai * 500)));
-      delay += maxD + 300;
-      if (wi === waves.length - 1) setTimeout(() => { setOrchComplete(true); setOrchRunning(false); setOrchProgress(100); }, delay);
-    });
-  }, [orchRunning, orchComplete, patient]);
-
-  // Auto-trigger orchestration when patient loads
-  useEffect(() => {
-    if (patient && !orchRunning && !orchComplete) {
-      const timer = setTimeout(runOrchestration, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [patient, orchRunning, orchComplete, runOrchestration]);
+  // Orchestration already complete — no animation needed
 
   const today = time.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
   const completedCount = Object.values(agentStatuses).filter((s) => s === "complete").length;
@@ -353,7 +325,7 @@ export default function Home() {
                 <Panel title="Labs" badge="RECENT" bc="bg-blue-500/15 text-blue-400 border-blue-500/25" count={P.labResults.length}>
                   <div className="space-y-[3px]">{P.labResults.map((l) => (<div key={l.test} className="flex items-center justify-between"><div><span className="text-[10px] font-mono text-[#9090a0]">{l.test}</span><span className="text-[7px] font-mono text-[#3a3a48] ml-1">{l.range}</span></div><div className="flex items-center gap-1"><span className={`text-[11px] font-mono font-bold tabular-nums ${LS[l.status]}`}>{l.value}</span>{l.status !== "normal" && <span className={`text-[7px] font-mono font-bold px-1 rounded ${l.status === "high" ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400"}`}>{l.status === "high" ? "H" : "L"}</span>}</div></div>))}</div>
                 </Panel>
-                <Panel title="Transcript" badge={callStatus === "active" ? "LIVE" : undefined} bc="bg-emerald-500/15 text-emerald-400 border-emerald-500/25" count={transcript.length}>
+                <Panel title="Transcript" badge="COMPLETE" bc="bg-emerald-500/15 text-emerald-400 border-emerald-500/25" count={transcript.length}>
                   {transcript.length === 0 ? <p className="text-[10px] font-mono text-[#2a2a35] italic">No transcript data</p> : <div className="space-y-1">{transcript.slice(-12).map((line, i) => (<p key={i} className="text-[10px] font-mono leading-relaxed"><span className={`font-bold ${line.role === "user" ? "text-amber-400" : "text-emerald-400"}`}>{line.role === "user" ? "USR" : "AGT"}</span><span className="text-[#3a3a48] mx-1">|</span><span className="text-[#9090a0]">{line.text}</span></p>))}</div>}
                 </Panel>
                 <Panel title="Extracted" badge={extracted.urgency || "GEMINI"} bc={extracted.urgency ? SEV[extracted.urgency].badge : "bg-purple-500/15 text-purple-400 border-purple-500/25"}>
