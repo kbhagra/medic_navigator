@@ -103,7 +103,7 @@ export default function LiveCallPanel({ callId, onCallComplete }: Props) {
           transition={{ repeat: Infinity, duration: 2 }}
         />
         <p className="text-sm text-blue-700">
-          Call is being handled by Navigator AI
+          Call is being handled by MOCHA AI
         </p>
       </div>
 
@@ -122,7 +122,7 @@ export default function LiveCallPanel({ callId, onCallComplete }: Props) {
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               className={`text-sm ${
-                line.includes("Navigator AI")
+                line.includes("MOCHA AI")
                   ? "text-blue-700"
                   : line.includes("Agent")
                   ? "text-gray-700"

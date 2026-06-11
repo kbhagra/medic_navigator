@@ -1,13 +1,13 @@
-# Navigator — Claude Code Build Prompt
+# MOCHA — AI Hospital Automation Platform Build Prompt
 
 ## What you're building
 
-A full-stack web application called **Navigator** — an AI-powered hospital intelligence and patient routing system. It has two interfaces:
+A full-stack web application called **MOCHA** — an AI-powered hospital automation platform. It has two interfaces:
 
 1. **Patient view** — consumer-facing: a patient inputs their health info, insurance, and task (e.g. "get my MRI pre-authorized"). The AI researches, generates a call script, and places an autonomous phone call to their doctor/insurer on their behalf.
 2. **Hospital Intelligence Dashboard** — a Bloomberg-terminal-style command center showing real-time ER capacity heatmaps, patient routing queue, agent call logs, and doctor/specialist availability.
 
-The tagline: *"The system is designed to make you give up. Navigator fights back."*
+The tagline: *"The best use of AI isn't to replace doctors. It's to give them their time back."*
 
 ---
 

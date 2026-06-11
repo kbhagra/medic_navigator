@@ -28,7 +28,7 @@ Return this JSON and nothing else:
   "situation": "what happened / chief complaint or null",
   "urgency": "Low or Medium or High or null",
   "medicalNotes": "medications, allergies, conditions mentioned or null",
-  "actionNeeded": "what they need Navigator to do or null"
+  "actionNeeded": "what they need MOCHA to do or null"
 }`,
                 },
               ],

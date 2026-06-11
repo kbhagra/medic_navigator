@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Navigator — AI Healthcare Agent",
+  title: "MOCHA — AI Hospital Automation Platform",
   description:
-    "The system is designed to make you give up. Navigator fights back.",
+    "The best use of AI isn't to replace doctors. It's to give them their time back.",
 };
 
 export default function RootLayout({

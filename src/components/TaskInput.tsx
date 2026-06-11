@@ -28,7 +28,7 @@ export default function TaskInput({ onSubmit }: Props) {
           What do you need done?
         </h2>
         <p className="text-gray-500 mt-2">
-          Describe your task and Navigator will handle the call.
+          Describe your task and MOCHA will handle the call.
         </p>
       </div>
 

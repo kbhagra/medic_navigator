@@ -162,7 +162,7 @@ export default function DebugPage() {
       {/* Left — Control Panel */}
       <div className="lg:w-[340px] w-full border-b lg:border-b-0 lg:border-r border-[#2a2a2a] p-6 flex flex-col gap-5 shrink-0">
         <div>
-          <h1 className="text-xl font-bold text-white tracking-tight">Navigator</h1>
+          <h1 className="text-xl font-bold text-white tracking-tight">MOCHA</h1>
           <p className="text-xs text-[#555] font-mono mt-1">Vapi Debug Panel</p>
         </div>
 

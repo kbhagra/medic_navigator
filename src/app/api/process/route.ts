@@ -3,6 +3,27 @@ import { callData } from "@/lib/debugStore";
 import { lookupByPhone, lookupByName, queryMemvAI } from "@/lib/memvLookup";
 
 const GEMINI_KEY = process.env.GOOGLE_GEMINI_API_KEY;
+const PERPLEXITY_KEY = process.env.PERPLEXITY_API_KEY;
+
+async function callPerplexity(prompt: string): Promise<string> {
+  try {
+    const res = await fetch("https://api.perplexity.ai/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${PERPLEXITY_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "sonar-pro",
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || "";
+  } catch {
+    return "";
+  }
+}
 
 function setStep(id: string, status: "active" | "done" | "error", detail?: string) {
   const step = callData.processingSteps.find((s) => s.id === id);
@@ -209,20 +230,10 @@ export async function POST() {
       primary_complaint: patientIssue || callData.extracted.situation,
     };
 
-    // Step 5: Generate summary with Gemini
+    // Step 5: Generate structured clinical note (summary) with Perplexity (or fallback to Gemini)
     setStep("summary", "active");
 
-    if (GEMINI_KEY && fullTranscript) {
-      try {
-        const summaryRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [{
-                parts: [{
-                  text: `You are summarizing a healthcare intake call. Use ALL available context.
+    const summaryPrompt = `You are an AI clinical documentation assistant. You are generating a fully structured clinical note from a healthcare intake call. Use ALL available context.
 
 CALLER: ${patientName || "Unknown"}
 PHONE: ${patientPhone || "Unknown"}
@@ -240,32 +251,45 @@ EXTRACTED INFO:
 - Medical Notes: ${callData.extracted.medicalNotes || "N/A"}
 - Action Needed: ${callData.extracted.actionNeeded || "N/A"}
 
-Write a comprehensive clinical summary covering:
-1. Patient identification and contact info
-2. Chief complaint and current symptoms
-3. Relevant medical history (from Mem[v] records)
-4. Urgency assessment
-5. Recommended next steps / routing decision
-6. Any follow-up actions needed
+Write a comprehensive clinical note covering:
+1. Patient Identification and Contact Information
+2. Chief Complaint (Presenting symptoms, onset, and severity)
+3. Relevant Medical History (From prior Mem[v] records)
+4. Clinical Observations and Urgency Level
+5. Recommended Action and Care Plan (including specialist referrals or facility routing)
 
-Be concise and clinical. Plain text, no markdown.`,
-                }],
-              }],
-            }),
-          }
-        );
-        const summaryData = await summaryRes.json();
-        callData.summary =
-          summaryData.candidates?.[0]?.content?.parts?.[0]?.text ||
-          "Summary generation failed.";
+Be concise, clinical, and professional. Write in structured plain text (no markdown formatting).`;
+
+    if (fullTranscript) {
+      try {
+        if (PERPLEXITY_KEY) {
+          callData.summary = await callPerplexity(summaryPrompt);
+        } else if (GEMINI_KEY) {
+          const summaryRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: summaryPrompt }] }],
+              }),
+            }
+          );
+          const summaryData = await summaryRes.json();
+          callData.summary =
+            summaryData.candidates?.[0]?.content?.parts?.[0]?.text ||
+            "Summary generation failed.";
+        } else {
+          callData.summary = "Clinical note generation failed: no key configured.";
+        }
       } catch {
-        callData.summary = "Summary generation failed.";
+        callData.summary = "Clinical note generation failed.";
       }
     } else if (!callData.summary) {
       callData.summary = `Patient: ${patientName}\nLocation: ${patientLocation}\nComplaint: ${patientIssue}\nUrgency: ${callData.extracted.urgency || "Unknown"}`;
     }
 
-    setStep("summary", "done", "Summary generated");
+    setStep("summary", "done", PERPLEXITY_KEY ? "Clinical note generated using Perplexity" : "Clinical note generated using Gemini");
 
     // Step 6: Generate patient document with Gemini
     setStep("document", "active");

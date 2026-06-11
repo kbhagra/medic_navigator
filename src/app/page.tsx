@@ -116,6 +116,32 @@ export default function Home() {
   const [causes, setCauses] = useState<Cause[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<AgentDef | null>(null);
 
+  const [intakeForm, setIntakeForm] = useState({
+    name: "Ayaan Gazali",
+    location: "160 Golden Gate Ave, San Francisco, CA",
+    situation: "Severe right knee laceration, suspected patellar fracture after a cycling accident, pain level 8/10",
+    phone: "+16693105333",
+    medicalNotes: "Allergic to penicillin; takes Metformin 500mg daily; history of hypertension",
+    urgency: "High" as "Low" | "Medium" | "High",
+  });
+  const [submittingIntake, setSubmittingIntake] = useState(false);
+
+  const handleIntakeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmittingIntake(true);
+    try {
+      await fetch("/api/intake", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(intakeForm),
+      });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmittingIntake(false);
+    }
+  };
+
   // Clock
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
@@ -177,8 +203,8 @@ export default function Home() {
       <header className="border-b border-[#1e1e24] px-5 py-2 flex items-center justify-between shrink-0 bg-[#0a0a10]">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-gradient-to-br from-emerald-500 to-cyan-600 flex items-center justify-center"><span className="text-[10px] font-bold text-white">N</span></div>
-            <h1 className="text-[13px] font-bold text-white tracking-tight font-mono">NAVIGATOR</h1>
+            <div className="w-6 h-6 rounded bg-gradient-to-br from-emerald-500 to-cyan-600 flex items-center justify-center"><span className="text-[10px] font-bold text-white">M</span></div>
+            <h1 className="text-[13px] font-bold text-white tracking-tight font-mono">MOCHA</h1>
           </div>
           <div className="h-3 w-px bg-[#2a2a35]" />
           <span className="text-[9px] text-[#4a4a5a] font-mono uppercase tracking-[0.15em]">Patient Intelligence</span>
@@ -189,7 +215,27 @@ export default function Home() {
           </div>
           {orchRunning && (<><div className="h-3 w-px bg-[#2a2a35]" /><div className="flex items-center gap-1.5 bg-purple-950/40 border border-purple-800/40 rounded px-2 py-0.5"><span className="w-[5px] h-[5px] bg-purple-500 rounded-full animate-pulse" /><span className="text-[9px] text-purple-400 font-mono font-bold">ORCHESTRATING {orchProgress}%</span></div></>)}
         </div>
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-4">
+          {P && (
+            <button
+              onClick={async () => {
+                await fetch("/api/reset", { method: "POST" });
+                setPatient(null);
+                setTranscript([]);
+                setExtracted({ name: null, location: null, situation: null, urgency: null, medicalNotes: null, actionNeeded: null });
+                setSummary(null);
+                setAgentResults([]);
+                setDiagnosisSummary(null);
+                setProcedures([]);
+                setCauses([]);
+                setOrchStatus("idle");
+                setOrchProgress(0);
+              }}
+              className="text-[9px] font-mono font-bold px-2.5 py-1 rounded border border-[#2a2a35] hover:bg-[#1a1a24] hover:border-[#3a3a48] text-[#6b6b80] hover:text-white transition-colors"
+            >
+              RESET DEMO
+            </button>
+          )}
           {callStatus === "active" && (<div className="flex items-center gap-1.5 bg-amber-950/40 border border-amber-800/40 rounded px-2 py-0.5"><span className="w-[5px] h-[5px] bg-amber-500 rounded-full animate-pulse" /><span className="text-[9px] text-amber-400 font-mono font-bold">CALL ACTIVE</span></div>)}
           <span className="text-[10px] font-mono text-[#4a4a5a] tabular-nums">{time.toLocaleTimeString()}</span>
         </div>
@@ -222,16 +268,96 @@ export default function Home() {
           {tab === "panels" ? (
             /* PATIENT DATA VIEW */
             !P ? (
-              /* EMPTY STATE */
-              <div className="flex-1 flex items-center justify-center bg-[#08080c]">
-                <div className="text-center">
-                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-[#1a2a3a] to-[#0d1a25] border border-[#2a3a4a] flex items-center justify-center mx-auto mb-4">
-                    <span className="text-2xl font-mono font-bold text-[#2a3a4a]">?</span>
+              /* EMPTY STATE INTAKE FORM */
+              <div className="flex-1 flex flex-col items-center justify-center bg-[#08080c] p-6 overflow-y-auto">
+                <form onSubmit={handleIntakeSubmit} className="w-full max-w-md bg-[#0c0c12] border border-[#1e1e24] rounded-lg p-5 space-y-4">
+                  <div className="border-b border-[#1e1e24] pb-2 flex items-center justify-between">
+                    <span className="text-[10px] font-mono font-bold text-cyan-400 uppercase tracking-widest">Patient Intake Portal</span>
+                    <span className="text-[8px] font-mono px-1.5 py-[2px] rounded bg-[#1e1e24] text-[#6b6b80] border border-[#2a2a35]">DEMO SIMULATOR</span>
                   </div>
-                  <p className="text-[14px] font-mono font-bold text-[#3a3a48]">No Patient Data</p>
-                  <p className="text-[11px] font-mono text-[#2a2a35] mt-1">Waiting for incoming call to Vapi...</p>
-                  <p className="text-[10px] font-mono text-[#1e1e24] mt-3">Patient data will auto-populate<br/>when a call is received and processed</p>
-                </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-[9px] font-mono text-[#5a5a6a] uppercase tracking-wider mb-1">Patient Name</label>
+                      <input
+                        type="text"
+                        value={intakeForm.name}
+                        onChange={(e) => setIntakeForm({ ...intakeForm, name: e.target.value })}
+                        className="w-full bg-[#111116] border border-[#1e1e24] rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                        required
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[9px] font-mono text-[#5a5a6a] uppercase tracking-wider mb-1">Phone Number</label>
+                        <input
+                          type="text"
+                          value={intakeForm.phone}
+                          onChange={(e) => setIntakeForm({ ...intakeForm, phone: e.target.value })}
+                          className="w-full bg-[#111116] border border-[#1e1e24] rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[9px] font-mono text-[#5a5a6a] uppercase tracking-wider mb-1">Urgency</label>
+                        <select
+                          value={intakeForm.urgency}
+                          onChange={(e) => setIntakeForm({ ...intakeForm, urgency: e.target.value as "Low" | "Medium" | "High" })}
+                          className="w-full bg-[#111116] border border-[#1e1e24] rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                        >
+                          <option value="Low">Low</option>
+                          <option value="Medium">Medium</option>
+                          <option value="High">High</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[9px] font-mono text-[#5a5a6a] uppercase tracking-wider mb-1">Location</label>
+                      <input
+                        type="text"
+                        value={intakeForm.location}
+                        onChange={(e) => setIntakeForm({ ...intakeForm, location: e.target.value })}
+                        className="w-full bg-[#111116] border border-[#1e1e24] rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[9px] font-mono text-[#5a5a6a] uppercase tracking-wider mb-1">Chief Complaint / Symptoms</label>
+                      <textarea
+                        rows={2}
+                        value={intakeForm.situation}
+                        onChange={(e) => setIntakeForm({ ...intakeForm, situation: e.target.value })}
+                        className="w-full bg-[#111116] border border-[#1e1e24] rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono resize-none"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[9px] font-mono text-[#5a5a6a] uppercase tracking-wider mb-1">Medical Notes (Allergies, Medications, History)</label>
+                      <textarea
+                        rows={2}
+                        value={intakeForm.medicalNotes}
+                        onChange={(e) => setIntakeForm({ ...intakeForm, medicalNotes: e.target.value })}
+                        className="w-full bg-[#111116] border border-[#1e1e24] rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono resize-none"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={submittingIntake}
+                    className="w-full bg-gradient-to-r from-emerald-500 to-cyan-600 text-white font-mono font-bold text-xs py-2.5 px-4 rounded hover:from-emerald-600 hover:to-cyan-700 transition-colors disabled:opacity-50 tracking-wider uppercase"
+                  >
+                    {submittingIntake ? "Registering Intake..." : "Submit Patient Intake"}
+                  </button>
+
+                  <div className="text-center pt-1 border-t border-[#1e1e24]/50">
+                    <span className="text-[8px] font-mono text-[#3a3a48]">Or wait for live Vapi call connection...</span>
+                  </div>
+                </form>
               </div>
             ) : (
               /* FULL PANELS */
@@ -345,7 +471,7 @@ export default function Home() {
           </div>
           <div className="flex-1 overflow-y-auto p-8" style={{ background: "linear-gradient(135deg, #111118, #0e0e14)" }}>
             {!P ? (
-              <div className="flex items-center justify-center h-full"><div className="text-center"><div className="w-20 h-28 border-2 border-dashed border-[#1e1e24] rounded mx-auto mb-4 flex items-center justify-center"><span className="text-[#2a2a35] font-mono text-2xl">?</span></div><p className="text-[12px] font-mono text-[#2a2a35]">Medical report will generate after call</p></div></div>
+              <div className="flex items-center justify-center h-full"><div className="text-center"><div className="w-20 h-28 border-2 border-dashed border-[#1e1e24] rounded mx-auto mb-4 flex items-center justify-center"><span className="text-[#2a2a35] font-mono text-2xl">?</span></div><p className="text-[12px] font-mono text-[#2a2a35]">Medical report will generate after intake / call</p></div></div>
             ) : (
               <div className="bg-white text-[#1a1a1a] max-w-[680px] mx-auto" style={{ fontFamily: "'Georgia', 'Times New Roman', serif", boxShadow: "0 4px 40px rgba(0,0,0,0.5)" }}>
                 <div className="h-1.5 bg-gradient-to-r from-emerald-600 via-cyan-600 to-blue-600" />
@@ -395,9 +521,9 @@ export default function Home() {
                     </div>
                   </>)}
 
-                  {summary && <section><h2 className="text-[12px] font-bold uppercase tracking-[0.1em] border-b border-[#ddd] pb-1 mb-2">Navigator Call Summary</h2><p className="whitespace-pre-line">{summary}</p></section>}
+                  {summary && <section><h2 className="text-[12px] font-bold uppercase tracking-[0.1em] border-b border-[#ddd] pb-1 mb-2">MOCHA Clinical Note</h2><p className="whitespace-pre-line">{summary}</p></section>}
 
-                  <div className="border-t-2 border-[#1a1a1a] pt-3 mt-8 flex justify-between text-[8px] text-[#999]" style={{ fontFamily: "Arial" }}><div><p className="font-bold text-[#666]">NAVIGATOR AI</p><p>Multi-Agent Intelligence Report</p><p>Generated: {today}</p></div><div className="text-right"><p className="font-bold text-[#666]">CONFIDENTIAL</p><p>Protected Health Information</p><p>HIPAA Compliant</p></div></div>
+                  <div className="border-t-2 border-[#1a1a1a] pt-3 mt-8 flex justify-between text-[8px] text-[#999]" style={{ fontFamily: "Arial" }}><div><p className="font-bold text-[#666]">MOCHA AI</p><p>Multi-Agent Intelligence Report</p><p>Generated: {today}</p></div><div className="text-right"><p className="font-bold text-[#666]">CONFIDENTIAL</p><p>Protected Health Information</p><p>HIPAA Compliant</p></div></div>
                 </div>
               </div>
             )}

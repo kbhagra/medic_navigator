@@ -76,7 +76,7 @@ export default function PatientOnboarding({ onComplete }: Props) {
       className="max-w-lg mx-auto"
     >
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Welcome to Navigator</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Welcome to MOCHA</h1>
         <p className="text-gray-500 mt-2">
           Tell us about yourself so we can fight for you.
         </p>
