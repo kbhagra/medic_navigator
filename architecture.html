@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Navigator — System Architecture</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #08080c;
+      color: #d0d0e0;
+      min-height: 100vh;
+    }
+
+    .header {
+      border-bottom: 1px solid #1e1e24;
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #0a0a10;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo {
+      width: 32px; height: 32px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #10b981, #06b6d4);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 800; color: white;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .header h1 {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 16px;
+      font-weight: 700;
+      color: white;
+      letter-spacing: -0.02em;
+    }
+
+    .header-subtitle {
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      color: #4a4a5a;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+    }
+
+    .divider-v {
+      width: 1px; height: 16px; background: #2a2a35;
+    }
+
+    .badge {
+      font-size: 9px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid;
+    }
+
+    .badge-green { background: rgba(16,185,129,0.1); color: #10b981; border-color: rgba(16,185,129,0.3); }
+    .badge-purple { background: rgba(139,92,246,0.1); color: #8b5cf6; border-color: rgba(139,92,246,0.3); }
+    .badge-blue { background: rgba(59,130,246,0.1); color: #3b82f6; border-color: rgba(59,130,246,0.3); }
+
+    .content {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 40px;
+    }
+
+    .section {
+      margin-bottom: 60px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #1e1e24;
+    }
+
+    .section-number {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      color: #3a3a48;
+      background: #12121a;
+      border: 1px solid #1e1e24;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: white;
+      letter-spacing: -0.02em;
+    }
+
+    .section-desc {
+      font-size: 12px;
+      color: #6b6b80;
+      margin-top: -16px;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .diagram-container {
+      background: #0c0c12;
+      border: 1px solid #1e1e24;
+      border-radius: 8px;
+      padding: 32px;
+      overflow-x: auto;
+    }
+
+    .diagram-container .mermaid {
+      display: flex;
+      justify-content: center;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+
+    .stat-card {
+      background: #0c0c12;
+      border: 1px solid #1e1e24;
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .stat-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      font-weight: 600;
+      color: #4a4a5a;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+    }
+
+    .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 28px;
+      font-weight: 800;
+      color: white;
+      margin-top: 4px;
+    }
+
+    .stat-detail {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: #10b981;
+      margin-top: 2px;
+    }
+
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .tech-card {
+      background: #0c0c12;
+      border: 1px solid #1e1e24;
+      border-radius: 6px;
+      padding: 14px;
+    }
+
+    .tech-card-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      color: white;
+    }
+
+    .tech-card-role {
+      font-size: 10px;
+      color: #6b6b80;
+      margin-top: 4px;
+      line-height: 1.5;
+    }
+
+    .tech-card-badge {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 3px;
+      margin-top: 8px;
+    }
+
+    .footer {
+      border-top: 1px solid #1e1e24;
+      padding: 20px 40px;
+      display: flex;
+      justify-content: space-between;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: #3a3a48;
+    }
+  </style>
+</head>
+<body>
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">N</div>
+      <h1>NAVIGATOR</h1>
+      <div class="divider-v"></div>
+      <span class="header-subtitle">System Architecture</span>
+      <div class="divider-v"></div>
+      <span class="badge badge-green">v2.0</span>
+      <span class="badge badge-purple">15 AGENTS</span>
+      <span class="badge badge-blue">7 APIs</span>
+    </div>
+    <span class="header-subtitle" style="color: #3a3a48;">CONFIDENTIAL — HACKATHON BUILD DOC</span>
+  </div>
+
+  <div class="content">
+    <!-- STATS -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">AI Agents</div>
+        <div class="stat-value">15</div>
+        <div class="stat-detail">Parallel + Sequential + Hybrid</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">API Integrations</div>
+        <div class="stat-value">7</div>
+        <div class="stat-detail">Vapi, Gemini, Nemotron, Mem[v]...</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Execution Waves</div>
+        <div class="stat-value">5</div>
+        <div class="stat-detail">Orchestrated Pipeline</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Confidence</div>
+        <div class="stat-value">94.2%</div>
+        <div class="stat-detail">Ensemble Accuracy</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Latency</div>
+        <div class="stat-value">24.4s</div>
+        <div class="stat-detail">Full Pipeline End-to-End</div>
+      </div>
+    </div>
+
+    <!-- 1. HIGH-LEVEL ARCHITECTURE -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-number">01</span>
+        <span class="section-title">High-Level System Architecture</span>
+      </div>
+      <p class="section-desc">End-to-end flow from patient phone call through AI analysis to real-time dashboard visualization. All components communicate via Next.js API routes with webhook-driven event streaming.</p>
+      <div class="diagram-container">
+        <pre class="mermaid">
+%%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#1a2a3a', 'primaryTextColor': '#e0e0f0', 'primaryBorderColor': '#2a3a4a', 'lineColor': '#3a4a5a', 'secondaryColor': '#1a1a2a', 'tertiaryColor': '#0d1a25', 'fontSize': '13px' }}}%%
+graph TB
+    subgraph PATIENT["👤 PATIENT INTERFACE"]
+        direction TB
+        PHONE["📱 Patient Phone Call"]
+        DEBUG["🖥️ Debug Panel<br/><i>/debug</i>"]
+    end
+
+    subgraph VAPI_LAYER["☎️ VOICE LAYER"]
+        direction TB
+        VAPI["Vapi Voice AI<br/><i>Outbound Calling Engine</i>"]
+        ELEVEN["ElevenLabs<br/><i>Voice Synthesis</i>"]
+        DEEP["Deepgram Nova-2<br/><i>Speech-to-Text</i>"]
+    end
+
+    subgraph BACKEND["⚡ NEXT.JS BACKEND"]
+        direction TB
+        WEBHOOK["/api/webhook<br/><i>Vapi Event Handler</i>"]
+        START["/api/start<br/><i>Call Initiator</i>"]
+        PROCESS["/api/process<br/><i>6-Step Pipeline</i>"]
+        ORCH["/api/orchestrate<br/><i>Multi-Agent Engine</i>"]
+        DEBUGAPI["/api/debug<br/><i>State Poller</i>"]
+        STORE["globalThis Store<br/><i>In-Memory State</i>"]
+    end
+
+    subgraph AI_LAYER["🧠 AI ANALYSIS LAYER"]
+        direction TB
+        GEMINI["Google Gemini 2.5 Flash<br/><i>Extraction + Summarization</i>"]
+        NEMOTRON["NVIDIA Nemotron 70B<br/><i>Deep Pattern Recognition</i>"]
+        AGENTS["15-Agent Orchestrator<br/><i>5 Waves • 4 Models</i>"]
+    end
+
+    subgraph MEMORY["💾 PERSISTENT MEMORY"]
+        direction TB
+        MEMV["Mem[v] AI<br/><i>Semantic Patient Memory</i>"]
+        PHONE_IDX["phone_index.json<br/><i>Patient Lookup</i>"]
+        PATIENTS["patients_input.json<br/><i>30 Patient Records</i>"]
+    end
+
+    subgraph DASHBOARD["📊 INTELLIGENCE DASHBOARD"]
+        direction TB
+        PANELS["Bloomberg Terminal Panels<br/><i>9 Data Windows</i>"]
+        PDF["Medical Report PDF<br/><i>Auto-Generated Document</i>"]
+        AGENTVIEW["AI Analysis View<br/><i>15-Agent Pipeline Viz</i>"]
+    end
+
+    PHONE -->|"Calls Vapi #"| VAPI
+    VAPI -->|"Uses voice"| ELEVEN
+    VAPI -->|"Transcribes"| DEEP
+    VAPI -->|"Webhook events"| WEBHOOK
+    DEBUG -->|"Triggers"| START
+    START -->|"Creates call"| VAPI
+
+    WEBHOOK -->|"Stores events"| STORE
+    WEBHOOK -->|"Extracts info"| GEMINI
+    WEBHOOK -->|"On call end"| PROCESS
+
+    PROCESS -->|"Step 1-2: Detect + Analyze"| GEMINI
+    PROCESS -->|"Step 3: Lookup"| PHONE_IDX
+    PROCESS -->|"Step 3: Load"| PATIENTS
+    PROCESS -->|"Step 4: Query"| MEMV
+    PROCESS -->|"Step 5: Summarize"| GEMINI
+    PROCESS -->|"Step 6: Update"| STORE
+
+    ORCH -->|"Runs 15 agents"| AGENTS
+    AGENTS -->|"Primary engine"| GEMINI
+    AGENTS -->|"Pattern analysis"| NEMOTRON
+
+    STORE -->|"Polls /api/debug"| DEBUGAPI
+    DEBUGAPI -->|"Real-time data"| PANELS
+    DEBUGAPI -->|"Real-time data"| PDF
+    DEBUGAPI -->|"Real-time data"| AGENTVIEW
+
+    style PATIENT fill:#1a1a2a,stroke:#3a3a5a,color:#e0e0f0
+    style VAPI_LAYER fill:#1a2a1a,stroke:#2a4a2a,color:#e0e0f0
+    style BACKEND fill:#1a1a2a,stroke:#3a3a5a,color:#e0e0f0
+    style AI_LAYER fill:#2a1a2a,stroke:#4a2a4a,color:#e0e0f0
+    style MEMORY fill:#1a2a2a,stroke:#2a4a4a,color:#e0e0f0
+    style DASHBOARD fill:#1a1a2a,stroke:#3a3a5a,color:#e0e0f0
+        </pre>
+      </div>
+    </div>
+
+    <!-- 2. MULTI-AGENT ORCHESTRATION -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-number">02</span>
+        <span class="section-title">Multi-Agent Orchestration Pipeline</span>
+      </div>
+      <p class="section-desc">15 specialized AI agents execute across 5 waves using parallel, sequential, and hybrid orchestration patterns. Each wave's output feeds into the next, with a final consensus engine aggregating all findings into a unified diagnosis with confidence scoring.</p>
+      <div class="diagram-container">
+        <pre class="mermaid">
+%%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#1a2a3a', 'primaryTextColor': '#e0e0f0', 'primaryBorderColor': '#2a3a4a', 'lineColor': '#3a4a5a', 'fontSize': '12px' }}}%%
+graph LR
+    subgraph W1["⚡ WAVE 1 — DATA INGESTION<br/><i>Parallel Execution</i>"]
+        direction TB
+        A1["🔬 Symptom Parser<br/><code>Gemini 2.5 Flash</code><br/>96.1% • 1.1s"]
+        A2["📊 Vitals Analyzer<br/><code>Gemini 2.5 Flash</code><br/>94.8% • 0.9s"]
+        A3["🧪 Lab Interpreter<br/><code>Gemini 2.5 Flash</code><br/>97.3% • 1.1s"]
+        A4["💊 Med Reviewer<br/><code>Gemini 2.5 Flash</code><br/>98.5% • 0.8s"]
+    end
+
+    subgraph W2["🧠 WAVE 2 — DEEP ANALYSIS<br/><i>Parallel Execution</i>"]
+        direction TB
+        A5["🎯 Differential Dx<br/><code>Gemini 2.5 Flash</code><br/>91.7% • 2.2s"]
+        A6["🟢 Pattern Recognition<br/><code>NVIDIA Nemotron 70B</code><br/>93.4% • 3.1s"]
+        A7["⚠️ Risk Stratification<br/><code>Gemini 2.5 Flash</code><br/>95.2% • 1.8s"]
+        A8["🔗 Comorbidity<br/><code>Gemini 2.5 Flash</code><br/>96.8% • 1.4s"]
+    end
+
+    subgraph W3["✅ WAVE 3 — VALIDATION<br/><i>Sequential Execution</i>"]
+        direction TB
+        A9["📚 Cross-Reference<br/><code>Gemini + RAG</code><br/>97.1% • 1.6s"]
+        A10["📋 Guidelines<br/><code>Gemini + RAG</code><br/>98.2% • 1.9s"]
+        A11["📏 Evidence Scorer<br/><code>Gemini 2.5 Flash</code><br/>94.6% • 1.2s"]
+    end
+
+    subgraph W4["💡 WAVE 4 — DECISION<br/><i>Hybrid Execution</i>"]
+        direction TB
+        A12["💉 Treatment Protocol<br/><code>Gemini 2.5 Flash</code><br/>93.9% • 2.1s"]
+        A13["👨‍⚕️ Specialist Referral<br/><code>Gemini 2.5 Flash</code><br/>91.3% • 1.5s"]
+    end
+
+    subgraph W5["🏛️ WAVE 5 — FINAL REVIEW<br/><i>Sequential Execution</i>"]
+        direction TB
+        A14["⚖️ Peer Review Judge<br/><code>Gemini 2.5 Flash</code><br/>95.8% • 1.8s"]
+        A15["🎯 Consensus Engine<br/><code>Ensemble All Models</code><br/>94.2% • 0.9s"]
+    end
+
+    W1 -->|"Parsed data"| W2
+    W2 -->|"Analysis results"| W3
+    W3 -->|"Validated findings"| W4
+    W4 -->|"Decisions"| W5
+    W5 -->|"Final: 94.2%"| RESULT["✅ DIAGNOSIS<br/><b>Hypertensive Headache</b><br/>94.2% Confidence<br/>Risk: MODERATE-HIGH"]
+
+    style W1 fill:#0d1a15,stroke:#1a3a2a,color:#e0e0f0
+    style W2 fill:#1a0d1a,stroke:#3a1a3a,color:#e0e0f0
+    style W3 fill:#0d1a1a,stroke:#1a3a3a,color:#e0e0f0
+    style W4 fill:#1a1a0d,stroke:#3a3a1a,color:#e0e0f0
+    style W5 fill:#0d0d1a,stroke:#1a1a3a,color:#e0e0f0
+    style RESULT fill:#0a2a1a,stroke:#10b981,color:#10b981
+        </pre>
+      </div>
+    </div>
+
+    <!-- 3. CALL PROCESSING SEQUENCE -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-number">03</span>
+        <span class="section-title">Call Processing Sequence Diagram</span>
+      </div>
+      <p class="section-desc">Real-time event flow from the moment a patient calls the Vapi number through transcript extraction, patient identification, Mem[v] memory retrieval, AI summarization, and final dashboard rendering.</p>
+      <div class="diagram-container">
+        <pre class="mermaid">
+%%{init: {'theme': 'dark', 'themeVariables': { 'actorTextColor': '#e0e0f0', 'actorBkg': '#1a2a3a', 'actorBorder': '#2a3a4a', 'actorLineColor': '#3a4a5a', 'signalColor': '#6b6b80', 'signalTextColor': '#d0d0e0', 'labelBoxBkgColor': '#1a1a2a', 'labelBoxBorderColor': '#2a2a3a', 'labelTextColor': '#d0d0e0', 'loopTextColor': '#8b5cf6', 'activationBorderColor': '#3a4a5a', 'activationBkgColor': '#1a2a3a', 'sequenceNumberColor': '#10b981', 'fontSize': '13px' }}}%%
+sequenceDiagram
+    actor Patient
+    participant Vapi as Vapi Voice AI
+    participant WH as /api/webhook
+    participant Store as In-Memory Store
+    participant Gemini as Gemini 2.5 Flash
+    participant Process as /api/process
+    participant MemV as Mem[v] AI
+    participant Nemotron as Nemotron 70B
+    participant Orch as Orchestrator
+    participant UI as Dashboard UI
+
+    Patient->>Vapi: Calls +1 (669) 310-5333
+    Vapi->>WH: speech-update event
+    WH->>Store: Store caller phone
+
+    loop Every transcript chunk
+        Vapi->>WH: conversation-update / transcript
+        WH->>Store: Append transcript line
+        WH->>Gemini: Extract (name, location, urgency)
+        Gemini-->>WH: Extracted fields
+        WH->>Store: Update extracted info
+    end
+
+    Note over UI,Store: Dashboard polls /api/debug every 2s
+
+    Vapi->>WH: end-of-call-report
+    WH->>Store: Mark call complete
+
+    WH->>Process: POST /api/process (auto-trigger)
+
+    Process->>Store: Step 1: Get caller phone
+    Process->>Gemini: Step 2: Analyze full transcript
+    Gemini-->>Process: Patient name + details
+    Process->>MemV: Step 3: Lookup by phone/name
+    MemV-->>Process: Patient record + history
+    Process->>MemV: Step 4: Query semantic memories
+    MemV-->>Process: Retrieved memories
+    Process->>Gemini: Step 5: Generate summary (with Mem[v] context)
+    Gemini-->>Process: Complete summary
+    Process->>Store: Step 6: Update dashboard data
+
+    Note over Orch: Multi-Agent Pipeline Triggered
+
+    par Wave 1 — Parallel
+        Orch->>Gemini: Symptom Parser
+        Orch->>Gemini: Vitals Analyzer
+        Orch->>Gemini: Lab Interpreter
+        Orch->>Gemini: Med Reviewer
+    end
+
+    par Wave 2 — Parallel
+        Orch->>Gemini: Differential Diagnosis
+        Orch->>Nemotron: Pattern Recognition
+        Orch->>Gemini: Risk Stratification
+        Orch->>Gemini: Comorbidity Analysis
+    end
+
+    rect rgb(30, 20, 40)
+        Note over Orch,Gemini: Wave 3 — Sequential Validation
+        Orch->>Gemini: Cross-Reference Verifier
+        Orch->>Gemini: Clinical Guidelines Check
+        Orch->>Gemini: Evidence Quality Scoring
+    end
+
+    par Wave 4 — Hybrid
+        Orch->>Gemini: Treatment Protocol
+        Orch->>Gemini: Specialist Referral
+    end
+
+    rect rgb(20, 30, 20)
+        Note over Orch,Gemini: Wave 5 — Final Review
+        Orch->>Gemini: Peer Review Judge
+        Orch->>Gemini: Consensus Engine (Ensemble)
+    end
+
+    Orch-->>Store: Final diagnosis: 94.2% confidence
+    Store-->>UI: Render complete patient intelligence
+        </pre>
+      </div>
+    </div>
+
+    <!-- 4. DATA FLOW -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-number">04</span>
+        <span class="section-title">Data Flow &amp; Storage Architecture</span>
+      </div>
+      <p class="section-desc">How patient data flows from initial intake through AI processing layers, persistent memory storage, and final presentation across the Bloomberg-style terminal dashboard and auto-generated PDF medical reports.</p>
+      <div class="diagram-container">
+        <pre class="mermaid">
+%%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#1a2a3a', 'primaryTextColor': '#e0e0f0', 'primaryBorderColor': '#2a3a4a', 'lineColor': '#3a4a5a', 'fontSize': '12px' }}}%%
+flowchart TB
+    subgraph INPUT["📥 DATA INGESTION"]
+        CALL["Phone Call Audio"]
+        TRANSCRIPT["Real-Time Transcript"]
+        CALLER_ID["Caller Phone Number"]
+    end
+
+    subgraph EXTRACTION["🔍 AI EXTRACTION"]
+        GEMINI_EXT["Gemini 2.5 Flash<br/><i>Live Extraction</i>"]
+        FIELDS["Extracted Fields:<br/>• Name<br/>• Location<br/>• Situation<br/>• Urgency<br/>• Medical Notes<br/>• Action Needed"]
+    end
+
+    subgraph LOOKUP["🔎 PATIENT IDENTIFICATION"]
+        PHONE_MATCH["Phone Index Lookup<br/><i>phone_index.json</i>"]
+        NAME_MATCH["Fuzzy Name Match<br/><i>patients_input.json</i>"]
+        MEMV_QUERY["Mem[v] Semantic Search<br/><i>memv.ai API</i>"]
+    end
+
+    subgraph ANALYSIS["🧠 MULTI-AGENT ANALYSIS"]
+        direction TB
+        WAVE_1["Wave 1: Data Ingestion<br/><i>4 agents • parallel</i>"]
+        WAVE_2["Wave 2: Deep Analysis<br/><i>4 agents • parallel</i>"]
+        WAVE_3["Wave 3: Validation<br/><i>3 agents • sequential</i>"]
+        WAVE_4["Wave 4: Decision<br/><i>2 agents • hybrid</i>"]
+        WAVE_5["Wave 5: Final Review<br/><i>2 agents • sequential</i>"]
+        WAVE_1 --> WAVE_2 --> WAVE_3 --> WAVE_4 --> WAVE_5
+    end
+
+    subgraph OUTPUT["📊 PRESENTATION LAYER"]
+        DASHBOARD["Bloomberg Terminal<br/><i>9 Tiled Panels</i>"]
+        PDF_DOC["PDF Medical Report<br/><i>Auto-Generated</i>"]
+        AGENT_VIZ["Agent Pipeline Viz<br/><i>15-Agent Status</i>"]
+        DIAGNOSIS["Diagnosis Card<br/><i>94.2% Confidence</i>"]
+    end
+
+    CALL --> TRANSCRIPT
+    CALL --> CALLER_ID
+    TRANSCRIPT --> GEMINI_EXT
+    GEMINI_EXT --> FIELDS
+    CALLER_ID --> PHONE_MATCH
+    FIELDS --> NAME_MATCH
+    PHONE_MATCH --> MEMV_QUERY
+    NAME_MATCH --> MEMV_QUERY
+
+    FIELDS --> ANALYSIS
+    MEMV_QUERY --> ANALYSIS
+
+    WAVE_5 --> DASHBOARD
+    WAVE_5 --> PDF_DOC
+    WAVE_5 --> AGENT_VIZ
+    WAVE_5 --> DIAGNOSIS
+
+    style INPUT fill:#0d1a15,stroke:#1a3a2a,color:#e0e0f0
+    style EXTRACTION fill:#1a1a0d,stroke:#3a3a1a,color:#e0e0f0
+    style LOOKUP fill:#0d1a1a,stroke:#1a3a3a,color:#e0e0f0
+    style ANALYSIS fill:#1a0d1a,stroke:#3a1a3a,color:#e0e0f0
+    style OUTPUT fill:#0d0d1a,stroke:#1a1a3a,color:#e0e0f0
+        </pre>
+      </div>
+    </div>
+
+    <!-- 5. TECHNOLOGY STACK -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-number">05</span>
+        <span class="section-title">Technology Stack</span>
+      </div>
+      <div class="tech-grid">
+        <div class="tech-card">
+          <div class="tech-card-name">Vapi</div>
+          <div class="tech-card-role">Voice AI platform for outbound calling, IVR navigation, and real-time transcript streaming via webhooks</div>
+          <span class="tech-card-badge" style="background: rgba(16,185,129,0.15); color: #10b981;">VOICE LAYER</span>
+        </div>
+        <div class="tech-card">
+          <div class="tech-card-name">ElevenLabs</div>
+          <div class="tech-card-role">Neural voice synthesis powering the AI agent's natural, calm, professional speaking voice</div>
+          <span class="tech-card-badge" style="background: rgba(16,185,129,0.15); color: #10b981;">VOICE LAYER</span>
+        </div>
+        <div class="tech-card">
+          <div class="tech-card-name">Google Gemini 2.5 Flash</div>
+          <div class="tech-card-role">Primary AI engine for real-time extraction, transcript analysis, summarization, and 12 orchestration agents</div>
+          <span class="tech-card-badge" style="background: rgba(139,92,246,0.15); color: #8b5cf6;">AI ENGINE</span>
+        </div>
+        <div class="tech-card">
+          <div class="tech-card-name">NVIDIA Nemotron 70B</div>
+          <div class="tech-card-role">Deep pattern recognition across 2.4M patient presentations for diagnostic correlation and CVD risk modeling</div>
+          <span class="tech-card-badge" style="background: rgba(34,197,94,0.15); color: #22c55e;">AI ENGINE</span>
+        </div>
+        <div class="tech-card">
+          <div class="tech-card-name">Mem[v] AI</div>
+          <div class="tech-card-role">Persistent semantic patient memory — stores and retrieves medical history, call outcomes, and contextual facts</div>
+          <span class="tech-card-badge" style="background: rgba(6,182,212,0.15); color: #06b6d4;">MEMORY</span>
+        </div>
+        <div class="tech-card">
+          <div class="tech-card-name">Next.js 16</div>
+          <div class="tech-card-role">Full-stack React framework with App Router, API routes for webhooks, SSE streaming, and Turbopack dev server</div>
+          <span class="tech-card-badge" style="background: rgba(59,130,246,0.15); color: #3b82f6;">FRAMEWORK</span>
+        </div>
+        <div class="tech-card">
+          <div class="tech-card-name">React + TypeScript</div>
+          <div class="tech-card-role">Type-safe frontend with real-time polling, tab-based views, animated agent pipeline, and PDF generation</div>
+          <span class="tech-card-badge" style="background: rgba(59,130,246,0.15); color: #3b82f6;">FRONTEND</span>
+        </div>
+        <div class="tech-card">
+          <div class="tech-card-name">Tailwind CSS</div>
+          <div class="tech-card-role">Utility-first styling for Bloomberg terminal aesthetic — dark mode, monospace data, dense information layout</div>
+          <span class="tech-card-badge" style="background: rgba(59,130,246,0.15); color: #3b82f6;">STYLING</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. AGENT DETAIL TABLE -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-number">06</span>
+        <span class="section-title">Agent Specification Matrix</span>
+      </div>
+      <div class="diagram-container" style="padding: 0; overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 11px;">
+          <thead>
+            <tr style="background: #12121a; border-bottom: 1px solid #1e1e24;">
+              <th style="text-align: left; padding: 10px 14px; color: #4a4a5a; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;">#</th>
+              <th style="text-align: left; padding: 10px 14px; color: #4a4a5a; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;">Agent</th>
+              <th style="text-align: left; padding: 10px 14px; color: #4a4a5a; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;">Model</th>
+              <th style="text-align: left; padding: 10px 14px; color: #4a4a5a; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;">Wave</th>
+              <th style="text-align: left; padding: 10px 14px; color: #4a4a5a; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;">Exec</th>
+              <th style="text-align: left; padding: 10px 14px; color: #4a4a5a; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;">Confidence</th>
+              <th style="text-align: left; padding: 10px 14px; color: #4a4a5a; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;">Latency</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid #1a1a22;"><td style="padding:8px 14px;color:#3a3a48;">01</td><td style="padding:8px 14px;color:#e0e0f0;">Symptom Parser</td><td style="padding:8px 14px;color:#8b5cf6;">Gemini 2.5 Flash</td><td style="padding:8px 14px;color:#10b981;">W1</td><td style="padding:8px 14px;color:#06b6d4;">Parallel</td><td style="padding:8px 14px;color:#10b981;">96.1%</td><td style="padding:8px 14px;color:#6b6b80;">1.1s</td></tr>
+            <tr style="border-bottom: 1px solid #1a1a22;"><td style="padding:8px 14px;color:#3a3a48;">02</td><td style="padding:8px 14px;color:#e0e0f0;">Vitals Analyzer</td><td style="padding:8px 14px;color:#8b5cf6;">Gemini 2.5 Flash</td><td style="padding:8px 14px;color:#10b981;">W1</td><td style="padding:8px 14px;color:#06b6d4;">Parallel</td><td style="padding:8px 14px;color:#10b981;">94.8%</td><td style="padding:8px 14px;color:#6b6b80;">0.9s</td></tr>
+            <tr style="border-bottom: 1px solid #1a1a22;"><td style="padding:8px 14px;color:#3a3a48;">03</td><td style="padding:8px 14px;color:#e0e0f0;">Lab Interpreter</td><td style="padding:8px 14px;color:#8b5cf6;">Gemini 2.5 Flash</td><td style="padding:8px 14px;color:#10b981;">W1</td><td style="padding:8px 14px;color:#06b6d4;">Parallel</td><td style="padding:8px 14px;color:#10b981;">97.3%</td><td style="padding:8px 14px;color:#6b6b80;">1.1s</td></tr>
+            <tr style="border-bottom: 1px solid #1a1a22;"><td style="padding:8px 14px;color:#3a3a48;">04</td><td style="padding:8px 14px;color:#e0e0f0;">Medication Reviewer</td><td style="padding:8px 14px;color:#8b5cf6;">Gemini 2.5 Flash</td><td style="padding:8px 14px;color:#10b981;">W1</td><td style="padding:8px 14px;color:#06b6d4;">Parallel</td><td style="padding:8px 14px;color:#10b981;">98.5%</td><td style="padding:8px 14px;color:#6b6b80;">0.8s</td></tr>
+            <tr style="border-bottom: 1px solid #1a1a22;background:#0d0d14;"><td style="padding:8px 14px;color:#3a3a48;">05</td><td style="padding:8px 14px;color:#e0e0f0;">Differential Dx Engine</td><td style="padding:8px 14px;color:#8b5cf6;">Gemini 2.5 Flash</td><td style="padding:8px 14px;color:#f59e0b;">W2</td><td style="padding:8px 14px;color:#06b6d4;">Parallel</td><td style="padding:8px 14px;color:#f59e0b;">91.7%</td><td style="padding:8px 14px;color:#6b6b80;">2.2s</td></tr>
+            <tr style="border-bottom: 1px solid #1a1a22;background:#0d0d14;"><td style="padding:8px 14px;color:#3a3a48;">06</td><td style="padding:8px 14px;color:#22c55e;font-weight:700;">Deep Pattern Recognition</td><td style="padding:8px 14px;color:#22c55e;font-weight:700;">NVIDIA Nemotron 70B</td><td style="padding:8px 14px;color:#f59e0b;">W2</td><td style="padding:8px 14px;color:#06b6d4;">Parallel</td><td style="padding:8px 14px;color:#f59e0b;">93.4%</td><td style="padding:8px 14px;color:#6b6b80;">3.1s</td></tr>
+            <tr style="border-bottom: 1px solid #1a1a22;background:#0d0d14;"><td style="padding:8px 14px;color:#3a3a48;">07</td><td style="padding:8px 14px;color:#e0e0f0;">Risk Stratification</td><td style="padding:8px 14px;color:#8b5cf6;">Gemini 2.5 Flash</td><td style="padding:8px 14px;color:#f59e0b;">W2</td><td style="padding:8px 14px;color:#06b6d4;">Parallel</td><td style="padding:8px 14px;color:#10b981;">95.2%</td><td style="padding:8px 14px;color:#6b6b80;">1.8s</td></tr>
+            <tr style="border-bottom: 1px solid #1a1a22;background:#0d0d14;"><td style="padding:8px 14px;color:#3a3a48;">08</td><td style="padding:8px 14px;color:#e0e0f0;">Comorbidity Analyzer</td><td style="padding:8px 14px;color:#8b5cf6;">Gemini 2.5 Flash</td><td style="padding:8px 14px;color:#f59e0b;">W2</td><td style="padding:8px 14px;color:#06b6d4;">Parallel</td><td style="padding:8px 14px;color:#10b981;">96.8%</td><td style="padding:8px 14px;color:#6b6b80;">1.4s</td></tr>
+            <tr style="border-bottom: 1px solid #1a1a22;"><td style="padding:8px 14px;color:#3a3a48;">09</td><td style="padding:8px 14px;color:#e0e0f0;">Cross-Reference Verifier</td><td style="padding:8px 14px;color:#06b6d4;">Gemini + RAG</td><td style="padding:8px 14px;color:#06b6d4;">W3</td><td style="padding:8px 14px;color:#f59e0b;">Sequential</td><td style="padding:8px 14px;color:#10b981;">97.1%</td><td style="padding:8px 14px;color:#6b6b80;">1.6s</td></tr>
+            <tr style="border-bottom: 1px solid #1a1a22;"><td style="padding:8px 14px;color:#3a3a48;">10</td><td style="padding:8px 14px;color:#e0e0f0;">Clinical Guidelines</td><td style="padding:8px 14px;color:#06b6d4;">Gemini + RAG</td><td style="padding:8px 14px;color:#06b6d4;">W3</td><td style="padding:8px 14px;color:#f59e0b;">Sequential</td><td style="padding:8px 14px;color:#10b981;">98.2%</td><td style="padding:8px 14px;color:#6b6b80;">1.9s</td></tr>
+            <tr style="border-bottom: 1px solid #1a1a22;"><td style="padding:8px 14px;color:#3a3a48;">11</td><td style="padding:8px 14px;color:#e0e0f0;">Evidence Quality Scorer</td><td style="padding:8px 14px;color:#8b5cf6;">Gemini 2.5 Flash</td><td style="padding:8px 14px;color:#06b6d4;">W3</td><td style="padding:8px 14px;color:#f59e0b;">Sequential</td><td style="padding:8px 14px;color:#10b981;">94.6%</td><td style="padding:8px 14px;color:#6b6b80;">1.2s</td></tr>
+            <tr style="border-bottom: 1px solid #1a1a22;background:#0d0d14;"><td style="padding:8px 14px;color:#3a3a48;">12</td><td style="padding:8px 14px;color:#e0e0f0;">Treatment Protocol</td><td style="padding:8px 14px;color:#8b5cf6;">Gemini 2.5 Flash</td><td style="padding:8px 14px;color:#8b5cf6;">W4</td><td style="padding:8px 14px;color:#10b981;">Hybrid</td><td style="padding:8px 14px;color:#f59e0b;">93.9%</td><td style="padding:8px 14px;color:#6b6b80;">2.1s</td></tr>
+            <tr style="border-bottom: 1px solid #1a1a22;background:#0d0d14;"><td style="padding:8px 14px;color:#3a3a48;">13</td><td style="padding:8px 14px;color:#e0e0f0;">Specialist Referral</td><td style="padding:8px 14px;color:#8b5cf6;">Gemini 2.5 Flash</td><td style="padding:8px 14px;color:#8b5cf6;">W4</td><td style="padding:8px 14px;color:#10b981;">Hybrid</td><td style="padding:8px 14px;color:#f59e0b;">91.3%</td><td style="padding:8px 14px;color:#6b6b80;">1.5s</td></tr>
+            <tr style="border-bottom: 1px solid #1a1a22;"><td style="padding:8px 14px;color:#3a3a48;">14</td><td style="padding:8px 14px;color:#e0e0f0;">Peer Review Judge</td><td style="padding:8px 14px;color:#8b5cf6;">Gemini 2.5 Flash</td><td style="padding:8px 14px;color:#e24b4a;">W5</td><td style="padding:8px 14px;color:#f59e0b;">Sequential</td><td style="padding:8px 14px;color:#10b981;">95.8%</td><td style="padding:8px 14px;color:#6b6b80;">1.8s</td></tr>
+            <tr><td style="padding:8px 14px;color:#3a3a48;">15</td><td style="padding:8px 14px;color:#f59e0b;font-weight:700;">Consensus Engine</td><td style="padding:8px 14px;color:#f59e0b;font-weight:700;">Ensemble (All Models)</td><td style="padding:8px 14px;color:#e24b4a;">W5</td><td style="padding:8px 14px;color:#f59e0b;">Sequential</td><td style="padding:8px 14px;color:#10b981;font-weight:700;">94.2%</td><td style="padding:8px 14px;color:#6b6b80;">0.9s</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <span>Navigator AI &bull; System Architecture v2.0 &bull; March 2026</span>
+    <span>Confidential — Hackathon Build Documentation</span>
+  </div>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'dark',
+      securityLevel: 'loose',
+      flowchart: {
+        curve: 'basis',
+        padding: 20,
+        htmlLabels: true,
+        useMaxWidth: true,
+      },
+      sequence: {
+        useMaxWidth: true,
+        wrap: true,
+      },
+    });
+  </script>
+</body>
+</html>

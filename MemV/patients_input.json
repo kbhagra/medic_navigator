@@ -1,0 +1,189 @@
+{
+  "patients": [
+    {
+      "name": "Jane Smith",
+      "phone": "555-0101",
+      "location": "Hayward, CA",
+      "health_issue": "severe headache and dizziness since yesterday morning"
+    },
+    {
+      "name": "Robert Chen",
+      "phone": "555-0102",
+      "location": "Oakland, CA",
+      "health_issue": "chest tightness and shortness of breath for the past two hours"
+    },
+    {
+      "name": "Fatima Al-Hassan",
+      "phone": "555-0103",
+      "location": "Fremont, CA",
+      "health_issue": "knee pain after a fall, difficulty walking"
+    },
+    {
+      "name": "Marcus Williams",
+      "phone": "555-0104",
+      "location": "San Leandro, CA",
+      "health_issue": "high fever of 103F and body aches for two days"
+    },
+    {
+      "name": "Elena Rosario",
+      "phone": "555-0105",
+      "location": "Union City, CA",
+      "health_issue": "sharp abdominal pain on the lower right side since this morning"
+    },
+    {
+      "name": "David Park",
+      "phone": "555-0106",
+      "location": "Castro Valley, CA",
+      "health_issue": "wrist swelling and bruising after sports injury"
+    },
+    {
+      "name": "Nadia Okonkwo",
+      "phone": "555-0107",
+      "location": "Hayward, CA",
+      "health_issue": "persistent dry cough and mild fever for five days"
+    },
+    {
+      "name": "James Thornton",
+      "phone": "555-0108",
+      "location": "Newark, CA",
+      "health_issue": "lower back pain radiating down the left leg, unable to sit comfortably"
+    },
+    {
+      "name": "Priya Nair",
+      "phone": "555-0109",
+      "location": "Milpitas, CA",
+      "health_issue": "rash spreading across the torso and arms, mild itching"
+    },
+    {
+      "name": "Carlos Mendez",
+      "phone": "555-0110",
+      "location": "Fremont, CA",
+      "health_issue": "blood sugar reading of 310, feeling lethargic and confused"
+    },
+    {
+      "name": "Susan Blake",
+      "phone": "555-0111",
+      "location": "San Leandro, CA",
+      "health_issue": "sudden blurred vision in right eye starting this afternoon"
+    },
+    {
+      "name": "Ahmed Farouq",
+      "phone": "555-0112",
+      "location": "Oakland, CA",
+      "health_issue": "severe tooth pain and jaw swelling, possible abscess"
+    },
+    {
+      "name": "Linda Castillo",
+      "phone": "555-0113",
+      "location": "Hayward, CA",
+      "health_issue": "nausea and vomiting since last night, unable to keep food down"
+    },
+    {
+      "name": "Thomas Nguyen",
+      "phone": "555-0114",
+      "location": "Union City, CA",
+      "health_issue": "ankle sprain from running, significant swelling and bruising"
+    },
+    {
+      "name": "Grace Adeyemi",
+      "phone": "555-0115",
+      "location": "Castro Valley, CA",
+      "health_issue": "irregular heartbeat noticed over the past few days, occasional palpitations"
+    },
+    {
+      "name": "Kevin O'Brien",
+      "phone": "555-0116",
+      "location": "Newark, CA",
+      "health_issue": "cut on the forearm that won't stop bleeding after a kitchen accident"
+    },
+    {
+      "name": "Mei Lin",
+      "phone": "555-0117",
+      "location": "Fremont, CA",
+      "health_issue": "ear pain and reduced hearing in the left ear for three days"
+    },
+    {
+      "name": "Darnell Jackson",
+      "phone": "555-0118",
+      "location": "Hayward, CA",
+      "health_issue": "shoulder dislocation during gym workout, arm immobile"
+    },
+    {
+      "name": "Isabelle Moreau",
+      "phone": "555-0119",
+      "location": "San Leandro, CA",
+      "health_issue": "migraine with visual aura, third episode this month"
+    },
+    {
+      "name": "Samuel Osei",
+      "phone": "555-0120",
+      "location": "Oakland, CA",
+      "health_issue": "difficulty urinating and burning sensation, possible UTI"
+    },
+    {
+      "name": "Angela Torres",
+      "phone": "555-0121",
+      "location": "Milpitas, CA",
+      "health_issue": "allergic reaction with hives after eating at a restaurant"
+    },
+    {
+      "name": "Brian Kowalski",
+      "phone": "555-0122",
+      "location": "Castro Valley, CA",
+      "health_issue": "severe acid reflux and chest burning not responding to antacids"
+    },
+    {
+      "name": "Yuki Tanaka",
+      "phone": "555-0123",
+      "location": "Fremont, CA",
+      "health_issue": "persistent fatigue and unexplained weight loss over the past month"
+    },
+    {
+      "name": "Rashida Moore",
+      "phone": "555-0124",
+      "location": "Hayward, CA",
+      "health_issue": "painful urination and lower abdominal cramping since this morning"
+    },
+    {
+      "name": "Patrick Sullivan",
+      "phone": "555-0125",
+      "location": "Newark, CA",
+      "health_issue": "sudden weakness on the left side of the face and slurred speech"
+    },
+    {
+      "name": "Amara Diallo",
+      "phone": "555-0126",
+      "location": "Union City, CA",
+      "health_issue": "swollen lymph nodes in the neck persisting for over two weeks"
+    },
+    {
+      "name": "Victor Reyes",
+      "phone": "555-0127",
+      "location": "San Leandro, CA",
+      "health_issue": "severe allergic reaction to bee sting, throat tightening"
+    },
+    {
+      "name": "Hannah Fischer",
+      "phone": "555-0128",
+      "location": "Oakland, CA",
+      "health_issue": "anxiety attack with rapid heartbeat, sweating, and trembling"
+    },
+    {
+      "name": "Omar Shaikh",
+      "phone": "555-0129",
+      "location": "Milpitas, CA",
+      "health_issue": "deep laceration on the hand from a work accident, needs stitches"
+    },
+    {
+      "name": "Cynthia Brooks",
+      "phone": "555-0130",
+      "location": "Castro Valley, CA",
+      "health_issue": "knee locking and sharp pain when walking, possible torn meniscus"
+    },
+        {
+      "name": "Ayaan Gazali",
+      "phone": "6693609914",
+      "location": "Hayward, CA",
+      "health_issue": "18-year-old male presenting following a cycling accident that occurred approximately 2 hours ago on the Castro Valley bike trail near Lake Chabot. Patient lost control of his bicycle at moderate speed while descending a paved incline, struck a raised curb edge, and was thrown forward off the bike landing directly on his left leg with significant rotational force. Patient reports hearing an audible crack at the moment of impact. He was wearing a helmet but had no additional protective gear. Bystanders assisted him immediately and called 911. Patient is ambulatory only with full support — unable to bear any weight on the left lower extremity. Pain is reported at 9 out of 10 in severity, localized to the mid-shaft of the left femur and extending into the knee joint, described as sharp, constant, and significantly worsening with any attempted movement or palpitation. Visible deformity is noted — left thigh appears shortened and externally rotated compared to the right side, consistent with a displaced mid-shaft femur fracture. Moderate to severe swelling and bruising are present across the anterolateral thigh, with skin intact and no open wound observed. Patient reports no sensation of numbness or tingling in the left foot, though capillary refill in the left toes is slightly delayed at approximately 3 seconds. Pedal pulse on the left is faint and requires careful assessment for vascular compromise. Given the mechanism, severity, and vascular concerns associated with this injury, the patient should be directed to Eden Medical Center in Castro Valley, CA, as the primary receiving facility — it is the closest Level III trauma-capable hospital with orthopedic surgical coverage and imaging available 24 hours. Patient has a 12-year history of Type 2 diabetes mellitus currently managed with Metformin 1000mg twice daily and Glipizide 10mg daily — relevant due to increased risk of impaired bone healing and infection. Blood sugar at time of incident unknown; patient reports he had not eaten since morning. Patient also has hypertension managed with Lisinopril 20mg daily and Amlodipine 5mg daily, and hypercholesterolemia managed with Atorvastatin 40mg nightly. Patient is allergic to Penicillin with a documented anaphylactic reaction in 2009 — critical for antibiotic selection if surgical intervention is required. BMI is approximately 31.4. Patient smoked for 22 years, quit 6 years ago — relevant to fracture healing timeline and anesthesia risk. Patient is a school bus driver and lives alone; post-operative mobility and home recovery support will require coordination. Emergency contact is daughter Priya Okafor at 6693609922. X-ray, CT of the left femur, and vascular surgery consult are recommended urgently. Patient was administered no medications prior to arrival. Last meal was approximately 7 hours ago. Patient is conscious, alert, and oriented x3 — GCS 15."}
+  ]
+}
